@@ -16,7 +16,7 @@ const serial = require('./transports/serial');
 const paths = require('./paths');
 const { BUILTIN_THEMES, UI_THEMES } = require('../shared/themes');
 
-/** Envolve o handler para que erros virem `{ok:false,error}` em vez de rejeicao crua. */
+/** Envolve o handler para que erros virem `{ok:false,error}` em vez de rejeição crua. */
 function handle(channel, fn) {
   ipcMain.handle(channel, async (event, ...args) => {
     try {
@@ -49,7 +49,7 @@ function register() {
   }));
 
   handle('tsm:app:openExternal', (_e, url) => {
-    if (!/^https?:\/\//i.test(url)) throw new Error('URL nao permitida');
+    if (!/^https?:\/\//i.test(url)) throw new Error('URL não permitida');
     return shell.openExternal(url);
   });
 
@@ -81,7 +81,7 @@ function register() {
   handle('tsm:identities:remove', (_e, id) => repo.identities.remove(id));
 
   // ------------------------------------------------------------ cofre -----
-  // O renderer NUNCA recebe um segredo em claro; so escreve e pergunta se existe.
+  // O renderer NUNCA recebe um segredo em claro; só escreve e pergunta se existe.
   handle('tsm:secrets:set', (_e, ownerKind, ownerId, field, value) => {
     vault.write(ownerKind, ownerId, field, value);
     return true;
@@ -104,7 +104,7 @@ function register() {
     return { scheme: vault.scheme(), masterEnabled: vault.isMasterEnabled() };
   });
 
-  // ------------------------------------------------------ preferencias ----
+  // ------------------------------------------------------ preferências ----
   handle('tsm:settings:all', () => repo.settings.all());
   handle('tsm:settings:get', (_e, key, fallback) => repo.settings.get(key, fallback));
   handle('tsm:settings:set', (_e, key, value) => repo.settings.set(key, value));
@@ -118,7 +118,7 @@ function register() {
     return repo.themes.list();
   });
 
-  // -------------------------------------------------------- conexoes ------
+  // -------------------------------------------------------- conexões ------
   handle('tsm:conn:open', (event, payload) => manager.create(event.sender, payload));
   handle('tsm:conn:write', (_e, id, data) => { manager.write(id, data); return true; });
   handle('tsm:conn:resize', (_e, id, cols, rows) => { manager.resize(id, cols, rows); return true; });
@@ -133,13 +133,13 @@ function register() {
     return true;
   });
 
-  // ------------------------------------------------- log de sessao -------
+  // ------------------------------------------------- log de sessão -------
   handle('tsm:conn:startLog', (_e, id, options) => manager.startLog(id, options || {}));
   handle('tsm:conn:stopLog', (_e, id) => manager.stopLog(id));
   handle('tsm:conn:logStatus', (_e, id) => manager.logStatus(id));
   handle('tsm:log:defaultDir', () => require('./logger').defaultDir());
 
-  // ------------------------------------------------------- tuneis --------
+  // ------------------------------------------------------- túneis --------
   handle('tsm:conn:forwards', (_e, id) => manager.forwardsOf(id));
   handle('tsm:conn:addForward', (_e, id, spec) => manager.addForward(id, spec));
   handle('tsm:conn:removeForward', (_e, id, forwardId) => manager.removeForward(id, forwardId));
@@ -154,7 +154,7 @@ function register() {
   handle('tsm:keys:list', () => keygen.list());
   handle('tsm:keys:generate', (_e, options) => {
     const pair = keygen.generate(options);
-    // A chave privada NAO volta para o renderer; so o que da para mostrar.
+    // A chave privada NÃO volta para o renderer; só o que dá para mostrar.
     const saved = keygen.save(pair, { dir: options.dir, name: options.name });
     return {
       ...saved,
@@ -177,7 +177,7 @@ function register() {
   handle('tsm:serial:break', (_e, id, ms) => {
     const conn = manager.connectionFor(id);
     if (!conn || typeof conn.sendBreak !== 'function') {
-      throw new Error('Esta sessao nao suporta sinal de break');
+      throw new Error('Esta sessão não suporta sinal de break');
     }
     conn.sendBreak(ms);
     return true;
@@ -252,7 +252,7 @@ function register() {
   // ------------------------------------------------- import / export ------
   handle('tsm:io:pickImport', async (event) => {
     const res = await dialog.showOpenDialog(windowOf(event), {
-      title: 'Importar sessoes',
+      title: 'Importar sessões',
       properties: ['openFile'],
       filters: [
         { name: 'Todos os formatos suportados', extensions: ['json', 'tsm', 'ini', 'mxtsessions', 'reg'] },
@@ -269,8 +269,8 @@ function register() {
 
   handle('tsm:io:export', async (event, options) => {
     const res = await dialog.showSaveDialog(windowOf(event), {
-      title: 'Exportar sessoes',
-      defaultPath: `tsm-sessoes-${new Date().toISOString().slice(0, 10)}.tsm.json`,
+      title: 'Exportar sessões',
+      defaultPath: `tsm-sessões-${new Date().toISOString().slice(0, 10)}.tsm.json`,
       filters: [{ name: 'Export do TSM', extensions: ['json'] }]
     });
     if (res.canceled || !res.filePath) return { canceled: true };

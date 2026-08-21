@@ -1,24 +1,24 @@
 'use strict';
 /**
- * Arvore de layout de uma aba.
+ * Árvore de layout de uma aba.
  *
- * Uma aba deixa de ser "um terminal" e passa a ser uma arvore:
+ * Uma aba deixa de ser "um terminal" e passa a ser uma árvore:
  *
  *   folha  -> { kind: 'leaf', paneId }
- *   divisao-> { kind: 'split', dir: 'row' | 'col', children: [no, no], sizes: [f, f] }
+ *   divisão-> { kind: 'split', dir: 'row' | 'col', children: [no, no], sizes: [f, f] }
  *
- * Cada divisao tem exatamente dois filhos; layouts mais complexos saem do
- * aninhamento (que e como tmux, Windows Terminal e Tabby fazem). Duas divisoes
- * aninhadas cobrem 3 paineis, tres cobrem 4, e assim por diante — sem precisar
+ * Cada divisão tem exatamente dois filhos; layouts mais complexos saem do
+ * aninhamento (que é como tmux, Windows Terminal e Tabby fazem). Duas divisões
+ * aninhadas cobrem 3 painéis, três cobrem 4, e assim por diante — sem precisar
  * de uma tabela de layouts prontos.
  *
- * `sizes` guarda fracoes que somam 1, para o layout sobreviver a redimensionar
+ * `sizes` guarda frações que somam 1, para o layout sobreviver a redimensionar
  * a janela.
  */
 
 export const leaf = (paneId) => ({ kind: 'leaf', paneId });
 
-/** Percorre a arvore aplicando `fn` a cada folha. */
+/** Percorre a árvore aplicando `fn` a cada folha. */
 export function eachLeaf(node, fn) {
   if (!node) return;
   if (node.kind === 'leaf') return fn(node);
@@ -55,7 +55,7 @@ function locate(root, target, parent = null, index = -1) {
 /**
  * Divide a folha de `paneId`, colocando `newPaneId` ao lado.
  * `dir`: 'row' divide lado a lado; 'col' divide um sobre o outro.
- * Devolve a nova raiz (pode ser a mesma referencia).
+ * Devolve a nova raiz (pode ser a mesma referência).
  */
 export function splitLeaf(root, paneId, newPaneId, dir, before = false) {
   const target = findLeaf(root, paneId);
@@ -79,8 +79,8 @@ export function splitLeaf(root, paneId, newPaneId, dir, before = false) {
 }
 
 /**
- * Remove a folha. Quando uma divisao fica com um filho so, ela some e o filho
- * sobe no lugar dela — senao a arvore acumularia niveis vazios.
+ * Remove a folha. Quando uma divisão fica com um filho só, ela some e o filho
+ * sobe no lugar dela — senão a árvore acumularia níveis vazios.
  * Devolve a nova raiz, ou null se a aba ficou sem nenhum painel.
  */
 export function removeLeaf(root, paneId) {
@@ -103,17 +103,17 @@ export function removeLeaf(root, paneId) {
   return root;
 }
 
-/** Ordem visual das folhas — usada para "proximo painel". */
+/** Ordem visual das folhas — usadá para "próximo painel". */
 export function orderedLeaves(root) {
   return leafIds(root);
 }
 
 /**
- * Impressao digital da ESTRUTURA da arvore (nao dos tamanhos nem do foco).
+ * Impressão digital da ESTRUTURA da árvore (não dos tamanhos nem do foco).
  *
- * O renderizador so reconstroi o DOM quando essa assinatura muda. Sem isso,
- * qualquer mudanca de status reconstruiria a arvore e arrancaria os elementos
- * do xterm do documento a cada evento — caro e visivelmente instavel.
+ * O renderizador só reconstrói o DOM quando essa assinatura muda. Sem isso,
+ * qualquer mudança de status reconstruiria a árvore e arrancaria os elementos
+ * do xterm do documento a cada evento — caro e visivelmente instável.
  */
 export function signature(node) {
   if (!node) return '';
@@ -122,9 +122,9 @@ export function signature(node) {
 }
 
 /**
- * Vizinho geometrico na direcao pedida ('left'|'right'|'up'|'down').
- * Sobe na arvore ate achar uma divisao no eixo certo e desce pelo lado oposto,
- * o que da a navegacao "natural" com Alt+setas.
+ * Vizinho geométrico na direção pedida ('left'|'right'|'up'|'down').
+ * Sobe na árvore até achar uma divisão no eixo certo e desce pelo lado oposto,
+ * o que dá a navegação "natural" com Alt+setas.
  */
 export function neighbor(root, paneId, direction) {
   const axis = (direction === 'left' || direction === 'right') ? 'row' : 'col';
@@ -149,7 +149,7 @@ export function neighbor(root, paneId, direction) {
   return null;
 }
 
-/** Desce ate uma folha, preferindo o lado indicado quando o eixo bate. */
+/** Desce até uma folha, preferindo o lado indicado quando o eixo bate. */
 function firstLeafToward(node, axis, preferFirst) {
   let cur = node;
   while (cur.kind === 'split') {
@@ -161,10 +161,10 @@ function firstLeafToward(node, axis, preferFirst) {
 }
 
 /**
- * Monta o DOM da arvore dentro de `container`.
- * `mount(paneId)` devolve o elemento do terminal daquele painel — o elemento e
- * reaproveitado (nunca recriado), entao o buffer e o scroll do terminal
- * sobrevivem a qualquer mudanca de layout.
+ * Monta o DOM da árvore dentro de `container`.
+ * `mount(paneId)` devolve o elemento do terminal daquele painel — o elemento é
+ * reaproveitado (nunca recriado), então o buffer e o scroll do terminal
+ * sobrevivem a qualquer mudança de layout.
  */
 export function renderTree(container, root, { mount, activePaneId, onResize }) {
   container.replaceChildren();
@@ -196,7 +196,7 @@ function buildNode(node, ctx) {
   return wrap;
 }
 
-/** Divisoria arrastavel entre `index` e `index + 1`. */
+/** Divisoria arrastável entre `index` e `index + 1`. */
 function buildHandle(node, index, wrap, ctx) {
   const handle = document.createElement('div');
   handle.className = `split-handle ${node.dir}`;
@@ -212,7 +212,7 @@ function buildHandle(node, index, wrap, ctx) {
     const b0 = node.sizes[index + 1];
     const pair = a0 + b0;
 
-    // Enquanto arrasta, mexemos so no style: reconstruir a arvore a cada
+    // Enquanto arrasta, mexemos só no style: reconstruir a árvore a cada
     // mousemove destruiria os terminais.
     const children = [...wrap.children].filter((c) => !c.classList.contains('split-handle'));
     const elA = children[index];

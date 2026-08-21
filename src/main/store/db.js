@@ -6,9 +6,9 @@ let db = null;
 let dbPath = null;
 
 /**
- * Abre (ou cria) o banco de sessoes em `<pasta de dados>/tsm.db`.
- * Quem decide a pasta e `paths.js`: por padrao `data/` ao lado do executavel
- * (modo portatil), com o perfil do usuario como reserva.
+ * Abre (ou cria) o banco de sessões em `<pasta de dados>/tsm.db`.
+ * Quem decide a pasta é `paths.js`: por padrão `data/` ao lado do executável
+ * (modo portátil), com o perfil do usuário como reserva.
  */
 function open() {
   if (db) return db;
@@ -95,7 +95,7 @@ const MIGRATIONS = [
       CREATE INDEX idx_sessions_name   ON sessions(name);
       CREATE INDEX idx_sessions_recent ON sessions(last_used_at DESC);
 
-      -- credenciais reutilizaveis, no estilo "credentials" do MobaXterm
+      -- credenciais reutilizáveis, no estilo "credentials" do MobaXterm
       CREATE TABLE identities (
         id          TEXT PRIMARY KEY,
         name        TEXT NOT NULL UNIQUE,
@@ -156,7 +156,7 @@ const MIGRATIONS = [
     `);
   },
 
-  // ---- v2: biblioteca de comandos e estado da area de trabalho ----------
+  // ---- v2: biblioteca de comandos e estado da área de trabalho ----------
   (d) => {
     d.exec(`
       CREATE TABLE snippets (

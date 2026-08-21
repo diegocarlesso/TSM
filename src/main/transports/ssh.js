@@ -24,7 +24,7 @@ function agentSocket() {
 }
 
 /**
- * Uma sessao SSH interativa.
+ * Uma sessão SSH interativa.
  *
  * Eventos: `data`(string), `ready`, `close`(code), `error`(Error),
  *          `banner`(string), `status`(string),
@@ -98,14 +98,14 @@ class SshConnection extends EventEmitter {
     if (auth === 'key' || auth === 'key+password') {
       const keyPath = expandHome(cfg.privateKeyPath);
       if (!keyPath || !fs.existsSync(keyPath)) {
-        throw new Error(`Chave privada nao encontrada: ${cfg.privateKeyPath}`);
+        throw new Error(`Chave privada não encontrada: ${cfg.privateKeyPath}`);
       }
       opts.privateKey = fs.readFileSync(keyPath);
       if (this.secrets.passphrase) opts.passphrase = this.secrets.passphrase;
     }
     if (auth === 'agent') {
       const a = agentSocket();
-      if (!a) throw new Error('SSH agent nao disponivel (SSH_AUTH_SOCK nao definido)');
+      if (!a) throw new Error('SSH agent não disponível (SSH_AUTH_SOCK não definido)');
       opts.agent = a;
       opts.agentForward = !!cfg.agentForward;
     }
@@ -151,8 +151,8 @@ class SshConnection extends EventEmitter {
     c.on('banner', (msg) => this.emit('banner', msg));
 
     c.on('keyboard-interactive', (name, instructions, lang, prompts, finish) => {
-      // Muitos servidores usam kbd-interactive para a propria senha; se ja temos,
-      // respondemos direto e so incomodamos o usuario em 2FA/OTP.
+      // Muitos servidores usam kbd-interactive para a própria senha; se já temos,
+      // respondemos direto e só incomodamos o usuário em 2FA/OTP.
       const answers = [];
       const ask = [];
       prompts.forEach((p, i) => {
@@ -174,7 +174,7 @@ class SshConnection extends EventEmitter {
         });
         this.emit('prompt', {
           id, kind: 'keyboard-interactive',
-          message: item.prompt || name || 'Autenticacao',
+          message: item.prompt || name || 'Autenticação',
           echo: !!item.echo
         });
       }
@@ -183,7 +183,7 @@ class SshConnection extends EventEmitter {
     c.on('ready', () => {
       this.emit('status', 'autenticado');
       if (this.config.noShell) {
-        // Sessao so de arquivos (tipo `sftp`): nao gastamos um canal de shell.
+        // Sessão só de arquivos (tipo `sftp`): não gastamos um canal de shell.
         this.emit('ready');
         this._applyForwards();
         return;
@@ -278,11 +278,11 @@ class SshConnection extends EventEmitter {
 
   _teardownJump() {
     if (this.jumpClient) {
-      try { this.jumpClient.end(); } catch { /* ja fechado */ }
+      try { this.jumpClient.end(); } catch { /* já fechado */ }
       this.jumpClient = null;
     }
     for (const f of this.forwards) {
-      try { if (f.server) f.server.close(); } catch { /* ja fechado */ }
+      try { if (f.server) f.server.close(); } catch { /* já fechado */ }
     }
     this.forwards = [];
   }
@@ -293,12 +293,12 @@ class SshConnection extends EventEmitter {
       try {
         this.addForward(f);
       } catch (err) {
-        this.emit('data', `\r\n\x1b[31m[TSM] tunel falhou: ${err.message}\x1b[0m\r\n`);
+        this.emit('data', `\r\n\x1b[31m[TSM] túnel falhou: ${err.message}\x1b[0m\r\n`);
       }
     }
   }
 
-  /** Abre um tunel e devolve o registro, para a UI poder lista-lo e remove-lo. */
+  /** Abre um túnel e devolve o registro, para a UI poder lista-lo e remove-lo. */
   addForward(spec) {
     const entry = spec.type === 'remote'
       ? this._addRemoteForward(spec)
@@ -329,7 +329,7 @@ class SshConnection extends EventEmitter {
       else if (entry.spec.type === 'remote') {
         this.client.unforwardIn(entry.spec.remoteHost || '127.0.0.1', entry.spec.remotePort);
       }
-    } catch { /* ja fechado */ }
+    } catch { /* já fechado */ }
     if (entry.onTcp) this.client.removeListener('tcp connection', entry.onTcp);
     this.emit('forwards', this.listForwards());
     return true;
@@ -351,12 +351,12 @@ class SshConnection extends EventEmitter {
       entry.status = 'ativo';
       this.emit('forwards', this.listForwards());
       this.emit('data',
-        `\r\n\x1b[36m[TSM] tunel local ${localHost}:${localPort} -> ${remoteHost}:${remotePort}\x1b[0m\r\n`);
+        `\r\n\x1b[36m[TSM] túnel local ${localHost}:${localPort} -> ${remoteHost}:${remotePort}\x1b[0m\r\n`);
     });
     server.on('error', (err) => {
       entry.status = `erro: ${err.message}`;
       this.emit('forwards', this.listForwards());
-      this.emit('data', `\r\n\x1b[31m[TSM] tunel local ${localPort}: ${err.message}\x1b[0m\r\n`);
+      this.emit('data', `\r\n\x1b[31m[TSM] túnel local ${localPort}: ${err.message}\x1b[0m\r\n`);
     });
     return entry;
   }
@@ -369,17 +369,17 @@ class SshConnection extends EventEmitter {
       if (err) {
         entry.status = `erro: ${err.message}`;
         this.emit('forwards', this.listForwards());
-        this.emit('data', `\r\n\x1b[31m[TSM] tunel remoto ${remotePort}: ${err.message}\x1b[0m\r\n`);
+        this.emit('data', `\r\n\x1b[31m[TSM] túnel remoto ${remotePort}: ${err.message}\x1b[0m\r\n`);
         return;
       }
       entry.status = 'ativo';
       this.emit('forwards', this.listForwards());
       this.emit('data',
-        `\r\n\x1b[36m[TSM] tunel remoto ${remoteHost}:${remotePort} -> ${localHost}:${localPort}\x1b[0m\r\n`);
+        `\r\n\x1b[36m[TSM] túnel remoto ${remoteHost}:${remotePort} -> ${localHost}:${localPort}\x1b[0m\r\n`);
     });
 
-    // Cada tunel remoto so atende o proprio destino. Guardamos o handler para
-    // poder remove-lo depois sem derrubar os outros tuneis da mesma conexao.
+    // Cada túnel remoto só atende o próprio destino. Guardamos o handler para
+    // poder remove-lo depois sem derrubar os outros túneis da mesma conexão.
     entry.onTcp = (info, accept) => {
       if (info.destPort !== remotePort) return;
       const stream = accept();
@@ -411,7 +411,7 @@ class SshConnection extends EventEmitter {
     this.emit('hostkey:answer', accept);
   }
 
-  /** Handle SFTP reaproveitando a MESMA conexao TCP/SSH ja autenticada. */
+  /** Handle SFTP reaproveitando a MESMA conexão TCP/SSH já autenticada. */
   sftp() {
     return new Promise((resolve, reject) => {
       this.client.sftp((err, sftp) => (err ? reject(err) : resolve(sftp)));

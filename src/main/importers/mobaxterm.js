@@ -2,26 +2,26 @@
 /**
  * Importador de MobaXterm.ini e .mxtsessions.
  *
- * A Mobatek nao publica a especificacao do formato; o que existe e engenharia
- * reversa da comunidade. Por isso o parser aqui e DELIBERADAMENTE TOLERANTE:
+ * A Mobatek não publica a especificação do formato; o que existe é engenharia
+ * reversa da comunidade. Por isso o parser aqui é DELIBERADAMENTE TOLERANTE:
  *
- *   - os campos que a comunidade documenta com confianca (tipo, host, porta,
- *     usuario, caminho de chave, gateway) sao mapeados;
- *   - os demais NAO sao adivinhados: a linha crua vai inteira para
- *     `config.raw`, entao nenhuma informacao e perdida e da para reprocessar
+ *   - os campos que a comunidade documenta com confiança (tipo, host, porta,
+ *     usuário, caminho de chave, gateway) são mapeados;
+ *   - os demais NÃO são adivinhados: a linha crua vai inteira para
+ *     `config.raw`, então nenhuma informação é perdida e dá para reprocessar
  *     se o mapeamento evoluir;
- *   - qualquer linha que nao casar com o formato vira um aviso no relatorio,
- *     em vez de derrubar a importacao.
+ *   - qualquer linha que não casar com o formato vira um aviso no relatório,
+ *     em vez de derrubar a importação.
  *
  * Formato observado:
  *   [Bookmarks]            -> pasta raiz
  *   [Bookmarks_1]          -> outra pasta
  *   SubRep=Pasta\SubPasta  -> caminho da pasta (vazio = raiz)
  *   ImgNum=41              -> icone da pasta
- *   Nome= #<icone>#<tipo>%<host>%<porta>%<usuario>%...
+ *   Nome= #<icone>#<tipo>%<host>%<porta>%<usuário>%...
  */
 
-// Codigos de tipo do MobaXterm (engenharia reversa da comunidade).
+// Códigos de tipo do MobaXterm (engenharia reversa da comunidade).
 const TYPE_MAP = {
   0: 'ssh',
   1: 'telnet',
@@ -40,7 +40,7 @@ const TYPE_MAP = {
   14: 'wsl'
 };
 
-// O que o TSM sabe abrir hoje. O resto e importado como "nao suportado".
+// O que o TSM sabe abrir hoje. O resto é importado como "não suportado".
 const SUPPORTED = new Set(['ssh', 'telnet', 'sftp', 'shell']);
 
 function decode(buffer) {
@@ -55,7 +55,7 @@ function decode(buffer) {
   }
 }
 
-/** Divide o INI em secoes preservando a ordem. */
+/** Divide o INI em seções preservando a ordem. */
 function parseIni(text) {
   const sections = [];
   let current = null;
@@ -81,13 +81,13 @@ function parseBookmarkValue(value) {
   const v = value.trim();
   if (!v.startsWith('#')) return null;
 
-  // Os grupos sao separados por '#': conexao # fonte # cores # extras.
+  // Os grupos são separados por '#': conexão # fonte # cores # extras.
   const groups = v.slice(1).split('#');
   const icon = Number.parseInt(groups[0], 10);
   const connGroup = groups[1] ?? '';
   const fields = connGroup.split('%');
 
-  // O primeiro campo do grupo de conexao e o codigo de tipo.
+  // O primeiro campo do grupo de conexão é o código de tipo.
   const typeCode = Number.parseInt(fields[0], 10);
   if (!Number.isFinite(typeCode)) return null;
 
@@ -104,7 +104,7 @@ function parseBookmarkValue(value) {
 const isFlag = (s) => s === '1' || s === '-1' || s === '0';
 const truthy = (s) => s === '1';
 
-/** Heuristica: um campo que parece caminho de chave privada. */
+/** Heurística: um campo que parece caminho de chave privada. */
 function looksLikeKeyPath(s) {
   if (!s) return false;
   return /_ProfileDir_|[\\/]\.ssh[\\/]|\.pem$|\.ppk$|id_(rsa|dsa|ecdsa|ed25519)/i.test(s);
@@ -117,8 +117,8 @@ function normalizeKeyPath(s) {
 }
 
 /**
- * Mapeia o grupo de conexao para a config do TSM.
- * So preenche o que da para afirmar; o resto fica em `raw`.
+ * Mapeia o grupo de conexão para a config do TSM.
+ * So preenche o que dá para afirmar; o resto fica em `raw`.
  */
 function buildConfig(kind, parsed) {
   const f = parsed.fields;
@@ -140,7 +140,7 @@ function buildConfig(kind, parsed) {
   const user = (f[2] || '').trim();
   if (user) config.username = user;
 
-  // Varre o resto atras de sinais reconheciveis, sem assumir posicao fixa.
+  // Varre o resto atrás de sinais reconhecíveis, sem assumir posição fixa.
   const key = f.slice(3).find(looksLikeKeyPath);
   if (key) {
     config.privateKeyPath = normalizeKeyPath(key);
@@ -148,12 +148,12 @@ function buildConfig(kind, parsed) {
   }
 
   if (kind === 'ssh') {
-    // Nas amostras conhecidas os dois flags logo apos o usuario sao
-    // X11 forwarding e compressao. Marcamos como best-effort.
+    // Nas amostras conhecidas os dois flags logo após o usuário são
+    // X11 forwarding e compressão. Marcamos como best-effort.
     if (isFlag(f[3])) config.x11Forward = truthy(f[3]);
     if (isFlag(f[4])) config.compression = truthy(f[4]);
 
-    // Gateway/jump host: primeiro campo textual que parece host, apos os flags.
+    // Gateway/jump host: primeiro campo textual que parece host, após os flags.
     const tail = f.slice(5);
     const gwIdx = tail.findIndex((s) => s && /^[A-Za-z0-9._-]+$/.test(s) && /[.a-zA-Z]/.test(s) && !isFlag(s));
     if (gwIdx !== -1 && tail[gwIdx] !== config.host) {
@@ -202,7 +202,7 @@ function parseColors(sections) {
 
 /**
  * Faz o parse completo e devolve uma estrutura neutra
- * `{ folders, sessions, theme, warnings, stats }` — quem grava e o chamador.
+ * `{ folders, sessions, theme, warnings, stats }` — quem grava é o chamador.
  */
 function parse(buffer) {
   const text = decode(buffer);
@@ -244,7 +244,7 @@ function parse(buffer) {
 
       const parsed = parseBookmarkValue(entry.value);
       if (!parsed) {
-        warnings.push(`Linha ignorada (formato nao reconhecido) em [${section.name}]: ${entry.key}`);
+        warnings.push(`Linha ignorada (formato não reconhecido) em [${section.name}]: ${entry.key}`);
         continue;
       }
 
@@ -252,13 +252,13 @@ function parse(buffer) {
       byType[kind] = (byType[kind] || 0) + 1;
 
       if (!SUPPORTED.has(kind)) {
-        warnings.push(`"${entry.key}": tipo ${kind} ainda nao e suportado pelo TSM — sessao nao importada.`);
+        warnings.push(`"${entry.key}": tipo ${kind} ainda não é suportado pelo TSM — sessão não importada.`);
         continue;
       }
 
       const config = buildConfig(kind, parsed);
       if ((kind === 'ssh' || kind === 'telnet' || kind === 'sftp') && !config.host) {
-        warnings.push(`"${entry.key}": sem host identificavel — sessao nao importada.`);
+        warnings.push(`"${entry.key}": sem host identificável — sessão não importada.`);
         continue;
       }
 
@@ -273,7 +273,7 @@ function parse(buffer) {
   }
 
   if (!sessions.length && !folders.size) {
-    warnings.push('Nenhuma secao [Bookmarks] encontrada — o arquivo e mesmo um MobaXterm.ini/.mxtsessions?');
+    warnings.push('Nenhuma seção [Bookmarks] encontrada — o arquivo é mesmo um MobaXterm.ini/.mxtsessions?');
   }
 
   return {

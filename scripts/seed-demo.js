@@ -1,9 +1,9 @@
 /**
- * Semeia um banco de demonstracao SEM abrir o Electron.
+ * Semeia um banco de demonstração SEM abrir o Electron.
  *
  *   TSM_DATA_DIR=/tmp/demo node scripts/seed-demo.js
  *
- * Serve para capturas e para experimentar a interface com a arvore cheia.
+ * Serve para capturas e para experimentar a interface com a árvore cheia.
  */
 'use strict';
 const Module = require('node:module');
@@ -37,7 +37,7 @@ repo.tx(() => {
     if (atual[k] === undefined) repo.settings.set(k, v);
   }
 
-  const prod = repo.folders.create({ name: 'Producao' });
+  const prod = repo.folders.create({ name: 'Produção' });
   const bancos = repo.folders.create({ name: 'Bancos', parentId: prod.id });
   const web = repo.folders.create({ name: 'Web', parentId: prod.id });
   const redes = repo.folders.create({ name: 'Rede' });
@@ -48,7 +48,7 @@ repo.tx(() => {
 
   criar('web-01', 'ssh', { host: '10.20.0.11', port: 22, username: 'deploy' }, web.id, ['nginx']);
   criar('web-02', 'ssh', { host: '10.20.0.12', port: 22, username: 'deploy' }, web.id, ['nginx']);
-  criar('pg-primario', 'ssh', { host: '10.20.1.5', port: 2222, username: 'postgres' }, bancos.id, ['postgres'], '#8ed81c');
+  criar('pg-primário', 'ssh', { host: '10.20.1.5', port: 2222, username: 'postgres' }, bancos.id, ['postgres'], '#8ed81c');
   criar('pg-replica', 'ssh', { host: '10.20.1.6', port: 2222, username: 'postgres' }, bancos.id, ['postgres']);
   criar('redis', 'ssh', { host: '10.20.1.9', port: 22, username: 'root' }, bancos.id, ['cache']);
   criar('bastion', 'ssh', { host: 'bastion.exemplo.com', port: 22, username: 'diego' }, null, ['gateway'], '#0090f0');
@@ -58,10 +58,10 @@ repo.tx(() => {
   criar('app-homolog', 'ssh', { host: '10.30.0.5', port: 22, username: 'app' }, homolog.id, []);
   criar('Shell local', 'shell', {}, null, []);
 
-  repo.snippets.create({ name: 'Uso de disco', content: 'df -hT', category: 'Diagnostico' });
-  repo.snippets.create({ name: 'Top 10 memoria', content: 'ps aux --sort=-%mem | head -11', category: 'Diagnostico' });
+  repo.snippets.create({ name: 'Uso de disco', content: 'df -hT', category: 'Diagnóstico' });
+  repo.snippets.create({ name: 'Top 10 memória', content: 'ps aux --sort=-%mem | head -11', category: 'Diagnóstico' });
   repo.snippets.create({ name: 'Log do nginx', content: 'journalctl -u nginx -n 200 --no-pager', category: 'Web' });
 });
 
-console.log(`semeado em ${db.getPath()}: ${repo.sessions.count()} sessoes, ${repo.folders.list().length} pastas`);
+console.log(`semeado em ${db.getPath()}: ${repo.sessions.count()} sessões, ${repo.folders.list().length} pastas`);
 db.close();

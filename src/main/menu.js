@@ -15,7 +15,7 @@ function build(win) {
       submenu: [
         { role: 'about', label: 'Sobre o TSM' },
         { type: 'separator' },
-        { label: 'Preferencias...', accelerator: 'Cmd+,', click: () => send(win, 'settings') },
+        { label: 'Preferências...', accelerator: 'Cmd+,', click: () => send(win, 'settings') },
         { type: 'separator' },
         { role: 'services' },
         { type: 'separator' },
@@ -28,10 +28,10 @@ function build(win) {
     }] : []),
 
     {
-      label: '&Sessoes',
+      label: '&Sessões',
       submenu: [
-        { label: 'Nova sessao...', accelerator: 'CmdOrCtrl+N', click: () => send(win, 'session:new') },
-        { label: 'Conexao rapida...', accelerator: 'CmdOrCtrl+Shift+N', click: () => send(win, 'quickconnect') },
+        { label: 'Nova sessão...', accelerator: 'CmdOrCtrl+N', click: () => send(win, 'session:new') },
+        { label: 'Conexão rápida...', accelerator: 'CmdOrCtrl+Shift+N', click: () => send(win, 'quickconnect') },
         { label: 'Nova pasta...', accelerator: 'CmdOrCtrl+Shift+F', click: () => send(win, 'folder:new') },
         { type: 'separator' },
         { label: 'Shell local', accelerator: 'CmdOrCtrl+Shift+T', click: () => send(win, 'shell:new') },
@@ -44,8 +44,8 @@ function build(win) {
         { label: 'Dividir abaixo', accelerator: 'CmdOrCtrl+Shift+Down', click: () => send(win, 'split:down') },
         { label: 'Fechar painel', accelerator: 'CmdOrCtrl+Shift+W', click: () => send(win, 'pane:close') },
         { type: 'separator' },
-        { label: 'Importar sessoes...', click: () => send(win, 'import') },
-        { label: 'Exportar sessoes...', click: () => send(win, 'export') },
+        { label: 'Importar sessões...', click: () => send(win, 'import') },
+        { label: 'Exportar sessões...', click: () => send(win, 'export') },
         { label: 'Backup do banco...', click: () => send(win, 'backup') },
         { label: 'Abrir a pasta de dados', click: () => send(win, 'opendata') },
         ...(isMac ? [] : [{ type: 'separator' }, { role: 'quit', label: 'Sair' }])
@@ -62,7 +62,7 @@ function build(win) {
         { label: 'Localizar no terminal...', accelerator: 'CmdOrCtrl+F', click: () => send(win, 'term:find') },
         { label: 'Limpar terminal', accelerator: 'CmdOrCtrl+K', click: () => send(win, 'term:clear') },
         { type: 'separator' },
-        { label: 'Buscar sessao...', accelerator: 'CmdOrCtrl+P', click: () => send(win, 'palette') }
+        { label: 'Buscar sessão...', accelerator: 'CmdOrCtrl+P', click: () => send(win, 'palette') }
       ]
     },
 
@@ -74,9 +74,9 @@ function build(win) {
         { type: 'separator' },
         { label: 'Aumentar fonte', accelerator: 'CmdOrCtrl+=', click: () => send(win, 'font:inc') },
         { label: 'Diminuir fonte', accelerator: 'CmdOrCtrl+-', click: () => send(win, 'font:dec') },
-        { label: 'Fonte padrao', accelerator: 'CmdOrCtrl+0', click: () => send(win, 'font:reset') },
+        { label: 'Fonte padrão', accelerator: 'CmdOrCtrl+0', click: () => send(win, 'font:reset') },
         { type: 'separator' },
-        { label: 'Aparencia...', click: () => send(win, 'appearance') },
+        { label: 'Aparência...', click: () => send(win, 'appearance') },
         { role: 'togglefullscreen', label: 'Tela cheia' },
         { type: 'separator' },
         { role: 'toggleDevTools', label: 'Ferramentas de desenvolvedor' },
@@ -88,16 +88,16 @@ function build(win) {
       label: 'Fe&rramentas',
       submenu: [
         { label: 'Biblioteca de comandos...', accelerator: 'CmdOrCtrl+Shift+S', click: () => send(win, 'snippets') },
-        { label: 'Tuneis da sessao...', click: () => send(win, 'tunnels') },
-        { label: 'Gravar sessao em arquivo...', click: () => send(win, 'sessionlog') },
+        { label: 'Túneis da sessão...', click: () => send(win, 'tunnels') },
+        { label: 'Gravar sessão em arquivo...', click: () => send(win, 'sessionlog') },
         { label: 'MultiExec', accelerator: 'CmdOrCtrl+Shift+M', click: () => send(win, 'multiexec') },
         { type: 'separator' },
         { label: 'Chaves SSH...', click: () => send(win, 'keys') },
         { label: 'Credenciais salvas...', click: () => send(win, 'identities') },
         { label: 'Chaves de host conhecidas...', click: () => send(win, 'knownhosts') },
-        { label: 'Historico de conexoes...', click: () => send(win, 'history') },
+        { label: 'Histórico de conexões...', click: () => send(win, 'history') },
         { type: 'separator' },
-        { label: 'Configuracoes...', accelerator: 'CmdOrCtrl+,', click: () => send(win, 'settings') },
+        { label: 'Configurações...', accelerator: 'CmdOrCtrl+,', click: () => send(win, 'settings') },
         { label: 'Bloquear cofre', accelerator: 'CmdOrCtrl+L', click: () => send(win, 'vault:lock') }
       ]
     },
@@ -106,7 +106,7 @@ function build(win) {
       label: 'A&juda',
       submenu: [
         { label: 'Atalhos de teclado', click: () => send(win, 'help:shortcuts') },
-        { label: 'Repositorio do projeto', click: () => shell.openExternal('https://github.com/diegocarlesso/TSM') },
+        { label: 'Repositório do projeto', click: () => shell.openExternal('https://github.com/diegocarlesso/TSM') },
         { label: 'Sobre o TSM', click: () => send(win, 'help:about') }
       ]
     }

@@ -62,9 +62,9 @@ async function boot() {
     `${state.info.platform}/${state.info.arch} · Electron ${state.info.electron}`;
 }
 
-// --------------------------------------------------------------- sessoes --
+// --------------------------------------------------------------- sessões --
 async function openSession(session, { force = false } = {}) {
-  // Se o cofre estiver bloqueado e a sessao tiver senha, pedir antes de tentar.
+  // Se o cofre estiver bloqueado e a sessão tiver senha, pedir antes de tentar.
   if (state.vault.masterEnabled && !state.vault.unlocked) {
     const hasSecret = await window.tsm.secrets.has('session', session.id, 'password');
     if (hasSecret && !(await unlockVaultDialog())) return;
@@ -82,7 +82,7 @@ async function openSessionForFiles(session) {
   const pane = state.panes.find((p) => p.session && p.session.id === session.id && p.connectionId)
     || await openPane({ session });
   hideWelcome();
-  // Espera a conexao subir antes de listar arquivos.
+  // Espera a conexão subir antes de listar arquivos.
   const start = Date.now();
   while (pane.status !== 'conectado' && Date.now() - start < 15000) {
     await new Promise((r) => setTimeout(r, 150));
@@ -126,7 +126,7 @@ async function quickConnect() {
       name: spec.name, type: spec.type, config: spec.config, folderId: currentFolderId()
     });
     await reloadTree();
-    toast('Sessao salva', 'ok');
+    toast('Sessão salva', 'ok');
   }
 }
 
@@ -146,7 +146,7 @@ function bindUi() {
   $('#btn-import').addEventListener('click', importDialog);
   $('#btn-export').addEventListener('click', exportDialog);
   $('#btn-quick').addEventListener('click', quickConnect);
-  $('#btn-settings').addEventListener('click', () => settingsDialog('aparencia'));
+  $('#btn-settings').addEventListener('click', () => settingsDialog('aparência'));
 
   $('#search').addEventListener('input', (e) => {
     state.filter = e.target.value;
@@ -163,7 +163,7 @@ function bindUi() {
   $('#vault-state').addEventListener('click', async () => {
     if (state.vault.masterEnabled && !state.vault.unlocked) await unlockVaultDialog();
     else if (state.vault.masterEnabled) await lockVault();
-    else await settingsDialog('seguranca');
+    else await settingsDialog('segurança');
   });
 
   for (const btn of $$('#welcome [data-action]')) {
@@ -260,10 +260,10 @@ function renderTabs() {
 }
 
 /**
- * Monta a arvore de layout de cada aba dentro de `#panes`.
+ * Monta a árvore de layout de cada aba dentro de `#panes`.
  *
- * A reconstrucao acontece so quando a ESTRUTURA muda (assinatura da arvore).
- * Foco e status sao aplicados por classe, sem tocar no DOM dos terminais —
+ * A reconstrução acontece só quando a ESTRUTURA muda (assinatura da árvore).
+ * Foco e status são aplicados por classe, sem tocar no DOM dos terminais —
  * reanexar um elemento do xterm a cada evento seria caro e piscaria a tela.
  */
 function renderWorkspace() {
@@ -326,12 +326,12 @@ function tabMenu(e, tab, pane) {
       onClick: () => sftpPanel.show(pane.id)
     },
     {
-      label: 'Editar sessao…',
+      label: 'Editar sessão…',
       hidden: !pane.session,
       onClick: () => editSession(pane.session)
     },
     {
-      label: 'Tuneis…',
+      label: 'Túneis…',
       hidden: !['ssh', 'sftp'].includes(pane.type),
       onClick: () => tunnelsDialog(pane)
     },
@@ -343,7 +343,7 @@ function tabMenu(e, tab, pane) {
         toast('Break enviado', 'ok', 1500);
       })
     },
-    { label: 'Gravar sessao em arquivo…', onClick: () => sessionLogDialog(pane) },
+    { label: 'Gravar sessão em arquivo…', onClick: () => sessionLogDialog(pane) },
     { label: 'Biblioteca de comandos…', key: 'Ctrl+Shift+S', onClick: () => openSnippets() },
     { separator: true },
     {
@@ -382,7 +382,7 @@ async function renderRecent() {
   const recent = await window.tsm.sessions.recent(8);
   list.replaceChildren();
   if (!recent.length) return;
-  list.append(el('li', { class: 'muted', style: 'cursor:default;justify-content:center' }, ['Sessoes recentes']));
+  list.append(el('li', { class: 'muted', style: 'cursor:default;justify-content:center' }, ['Sessões recentes']));
   for (const s of recent) {
     list.append(el('li', { onClick: () => openSession(s) }, [
       el('span', { text: s.name }),
@@ -412,7 +412,7 @@ function toggleMultiExec() {
 
   const send = () => {
     const n = broadcast(`${input.value}\n`);
-    toast(`Enviado para ${n} sessao(oes)`, 'ok', 1500);
+    toast(`Enviado para ${n} sessão(oes)`, 'ok', 1500);
     input.select();
   };
   input.addEventListener('keydown', (e) => {
@@ -425,13 +425,13 @@ function toggleMultiExec() {
   input.focus();
 }
 
-/** Abre a biblioteca de comandos ja ligada a aba ativa (ou a todas). */
+/** Abre a biblioteca de comandos já ligada a aba ativa (ou a todas). */
 function openSnippets() {
   return snippetsDialog({
     onSend: (text, toAll) => {
       if (toAll) {
         const n = broadcast(text);
-        toast(`Enviado para ${n} sessao(oes)`, 'ok', 1600);
+        toast(`Enviado para ${n} sessão(oes)`, 'ok', 1600);
         return;
       }
       const pane = activePane();
@@ -449,7 +449,7 @@ async function commandPalette() {
   let index = 0;
 
   const input = el('input', {
-    type: 'text', placeholder: 'Buscar sessao por nome, host, usuario ou etiqueta…',
+    type: 'text', placeholder: 'Buscar sessão por nome, host, usuário ou etiqueta…',
     style: 'width:100%;padding:8px;background:var(--bg-1);border:1px solid var(--border);' +
            'border-radius:6px;outline:none;user-select:text'
   });
@@ -494,7 +494,7 @@ async function commandPalette() {
 
   paint();
   modal({
-    title: 'Ir para sessao',
+    title: 'Ir para sessão',
     width: 560,
     render: (a) => { api = a; return el('div', {}, [input, list]); }
   }).then(() => resolveFn(undefined));
@@ -508,8 +508,8 @@ function bindShortcuts() {
   window.addEventListener('keydown', (e) => {
     const ctrl = e.ctrlKey || e.metaKey;
 
-    // Alt + setas navega entre os paineis da aba — sem Ctrl, para nao brigar
-    // com o Alt+seta de historico de alguns shells.
+    // Alt + setas navega entre os painéis da aba — sem Ctrl, para não brigar
+    // com o Alt+seta de histórico de alguns shells.
     if (e.altKey && !ctrl && !e.shiftKey) {
       const dirs = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down' };
       if (dirs[e.key]) {
@@ -532,7 +532,7 @@ function bindShortcuts() {
     const pane = activePane();
     const tab = activeTab();
 
-    // Divisao do painel em foco.
+    // Divisão do painel em foco.
     if (e.shiftKey && e.key === 'ArrowRight') { e.preventDefault(); splitPane(pane, 'row'); return; }
     if (e.shiftKey && e.key === 'ArrowDown') { e.preventDefault(); splitPane(pane, 'col'); return; }
 
@@ -589,8 +589,8 @@ function bindMenu() {
       case 'font:inc': return adjustFontSize(1);
       case 'font:dec': return adjustFontSize(-1);
       case 'font:reset': return adjustFontSize(0);
-      case 'appearance': return settingsDialog('aparencia');
-      case 'settings': return settingsDialog('aparencia');
+      case 'appearance': return settingsDialog('aparência');
+      case 'settings': return settingsDialog('aparência');
       case 'identities': return identitiesDialog();
       case 'knownhosts': return knownHostsDialog();
       case 'history': return historyDialog();
@@ -622,7 +622,7 @@ function renderVaultBadge() {
     badge.textContent = v.scheme === 'safeStorage' ? 'cofre do SO' : 'sem cofre';
     badge.title = v.scheme === 'safeStorage'
       ? 'Credenciais cifradas pelo sistema operacional. Clique para configurar.'
-      : 'Nenhum mecanismo de cifragem disponivel. Clique para definir uma senha mestra.';
+      : 'Nenhum mecanismo de cifragem disponível. Clique para definir uma senha mestra.';
     if (v.scheme !== 'safeStorage') badge.classList.add('locked');
     return;
   }

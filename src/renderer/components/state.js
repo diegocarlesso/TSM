@@ -1,5 +1,5 @@
 'use strict';
-/** Estado central do renderer. Nada de framework: um store minusculo com pub/sub. */
+/** Estado central do renderer. Nada de framework: um store minúsculo com pub/sub. */
 
 const listeners = new Set();
 
@@ -15,7 +15,7 @@ export const state = {
   filter: '',
   selectedNode: null,          // { kind:'folder'|'session', id }
   expanded: new Set(),
-  // Uma aba contem uma ARVORE de paineis (ver components/layout.js).
+  // Uma aba contem uma ÁRVORE de painéis (ver components/layout.js).
   // `panes` continua sendo a lista plana de terminais; cada um sabe sua aba.
   tabs: [],                    // { id, name, root, activePaneId }
   activeTabId: null,
@@ -105,19 +105,19 @@ export function tabOfPane(paneId) {
   return pane ? tabById(pane.tabId) : null;
 }
 
-/** Paineis de uma aba, na ordem visual da arvore. */
+/** Painéis de uma aba, na ordem visual da árvore. */
 export function panesOfTab(tabId) {
   return state.panes.filter((p) => p.tabId === tabId);
 }
 
-/** O nome da aba e o do painel em foco — como no Windows Terminal. */
+/** O nome da aba é o do painel em foco — como no Windows Terminal. */
 export function tabTitle(tab) {
   if (tab.name) return tab.name;
   const focused = paneById(tab.activePaneId);
-  return focused ? focused.name : 'Sessao';
+  return focused ? focused.name : 'Sessão';
 }
 
-/** Constroi a arvore hierarquica a partir das listas planas. */
+/** Constrói a árvore hierarquica a partir das listas planas. */
 export function buildTree() {
   const byParent = new Map();
   for (const f of state.folders) {

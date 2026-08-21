@@ -1,10 +1,10 @@
 'use strict';
 /**
- * Cliente Telnet (RFC 854/855) com negociacao de opcoes suficiente para
+ * Cliente Telnet (RFC 854/855) com negociação de opções suficiente para
  * equipamentos de rede reais: ECHO, SGA, TERMINAL-TYPE, NAWS e BINARY.
  *
- * Tambem faz o auto-login opcional (usuario/senha) igual ao MobaXterm:
- * observa o fluxo de entrada procurando os prompts e responde uma unica vez.
+ * Também faz o auto-login opcional (usuário/senha) igual ao MobaXterm:
+ * observa o fluxo de entrada procurando os prompts e responde uma única vez.
  */
 const net = require('node:net');
 const { EventEmitter } = require('node:events');
@@ -12,9 +12,9 @@ const { EventEmitter } = require('node:events');
 const IAC = 255, DONT = 254, DO = 253, WONT = 252, WILL = 251, SB = 250, SE = 240;
 const OPT = { BINARY: 0, ECHO: 1, SGA: 3, STATUS: 5, TTYPE: 24, NAWS: 31, TSPEED: 32, NEW_ENVIRON: 39 };
 
-// Opcoes que aceitamos ATIVAR do nosso lado (respondemos WILL a um DO).
+// Opções que aceitamos ATIVAR do nosso lado (respondemos WILL a um DO).
 const WE_WILL = new Set([OPT.TTYPE, OPT.NAWS, OPT.SGA, OPT.BINARY, OPT.TSPEED]);
-// Opcoes que aceitamos que o SERVIDOR ative (respondemos DO a um WILL).
+// Opções que aceitamos que o SERVIDOR ative (respondemos DO a um WILL).
 const WE_DO = new Set([OPT.ECHO, OPT.SGA, OPT.BINARY]);
 
 const DEFAULT_PORT = 23;
@@ -84,7 +84,7 @@ class TelnetConnection extends EventEmitter {
     ]));
   }
 
-  /** Separa os comandos IAC do texto e devolve so o texto ao terminal. */
+  /** Separa os comandos IAC do texto e devolve só o texto ao terminal. */
   _onData(chunk) {
     this.buffer = Buffer.concat([this.buffer, chunk]);
     const out = [];
@@ -95,7 +95,7 @@ class TelnetConnection extends EventEmitter {
 
       if (byte !== IAC) { out.push(byte); i++; continue; }
 
-      // IAC no fim do buffer: espera o resto no proximo chunk.
+      // IAC no fim do buffer: espera o resto no próximo chunk.
       if (i + 1 >= this.buffer.length) break;
       const cmd = this.buffer[i + 1];
 
@@ -167,7 +167,7 @@ class TelnetConnection extends EventEmitter {
     }
   }
 
-  /** Auto-login: procura os prompts de usuario/senha e responde uma vez cada. */
+  /** Auto-login: procura os prompts de usuário/senha e responde uma vez cada. */
   _tryAutoLogin(text) {
     this.recentText = (this.recentText + text).slice(-256);
     const userRe = this.config.loginPrompt

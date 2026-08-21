@@ -1,5 +1,5 @@
 'use strict';
-/** Navegador de arquivos remoto (SFTP/SCP) montado sobre a conexao SSH ativa. */
+/** Navegador de arquivos remoto (SFTP/SCP) montado sobre a conexão SSH ativa. */
 import { el, $, contextMenu, confirmDialog, promptDialog, guard, toast, modal, formatBytes, formatDate } from './ui.js';
 import { state, paneById, emit } from './state.js';
 
@@ -51,10 +51,10 @@ export function hide() {
 /** Abre o painel para o painel/aba informado (ou o ativo). */
 export async function show(paneId) {
   const pane = paneById(paneId || state.activePaneId);
-  if (!pane) return toast('Abra uma sessao primeiro', 'warn');
-  if (!pane.connectionId) return toast('A sessao nao esta conectada', 'warn');
+  if (!pane) return toast('Abra uma sessão primeiro', 'warn');
+  if (!pane.connectionId) return toast('A sessão não está conectada', 'warn');
   if (!['ssh', 'sftp'].includes(pane.type)) {
-    return toast('Transferencia de arquivos so em sessoes SSH/SFTP', 'warn');
+    return toast('Transferência de arquivos só em sessões SSH/SFTP', 'warn');
   }
 
   state.sftp.paneId = pane.id;
@@ -185,7 +185,7 @@ function itemMenu(e, item, items) {
     { label: `Baixar (${chosen.length})`, onClick: () => download(chosen) },
     { separator: true },
     { label: 'Renomear…', onClick: () => rename(item) },
-    { label: 'Permissoes…', onClick: () => chmod(item) },
+    { label: 'Permissões…', onClick: () => chmod(item) },
     { label: 'Copiar caminho', onClick: () => { window.tsm.app.copy(item.path); toast('Caminho copiado', 'ok'); } },
     { separator: true },
     { label: `Excluir (${chosen.length})`, danger: true, onClick: () => removeItems(chosen) }
@@ -254,14 +254,14 @@ async function chmod(item) {
   const id = connectionId();
   const octal = (item.mode & 0o777).toString(8).padStart(3, '0');
   const value = await promptDialog({
-    title: 'Permissoes',
+    title: 'Permissões',
     label: 'Modo octal',
     value: octal,
-    hint: 'Ex.: 644 para arquivo, 755 para executavel/pasta.'
+    hint: 'Ex.: 644 para arquivo, 755 para executável/pasta.'
   });
   if (!value) return;
   const mode = Number.parseInt(value, 8);
-  if (!Number.isFinite(mode)) return toast('Modo invalido', 'err');
+  if (!Number.isFinite(mode)) return toast('Modo inválido', 'err');
   await guard(async () => {
     await window.tsm.sftp.chmod(id, item.path, mode);
     await refresh();
@@ -286,7 +286,7 @@ async function removeItems(items) {
   });
 }
 
-/** Editor de texto simples embutido, para configs rapidas. */
+/** Editor de texto simples embutido, para configs rápidas. */
 async function openFile(item) {
   const id = connectionId();
   if (!id) return;

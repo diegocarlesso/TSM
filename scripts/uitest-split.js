@@ -1,17 +1,17 @@
 /**
- * Roteiro de teste do split de paineis, executado DENTRO do renderer.
+ * Roteiro de teste do split de painéis, executado DENTRO do renderer.
  *
  *   TSM_UITEST=scripts/uitest-split.js TSM_SMOKE=1 npx electron .
  *
- * Dirige a interface so por eventos de DOM reais — clique e teclado — para nao
- * existir nenhuma porta de teste no codigo de producao. Devolve `{ ok, log }`.
+ * Dirige a interface só por eventos de DOM reais — clique e teclado — para não
+ * existir nenhuma porta de teste no código de produção. Devolve `{ ok, log }`.
  */
 (async () => {
   const log = [];
   let ok = true;
 
   const record = (passou, texto, detalhe) => {
-    // O detalhe so aparece quando falha; num teste que passou, seria ruido.
+    // O detalhe só aparece quando falha; num teste que passou, seria ruido.
     const extra = !passou && detalhe ? `\n        ${detalhe}` : '';
     log.push(`  ${passou ? 'ok   ' : 'FALHA'} ${texto}${extra}`);
     if (!passou) ok = false;
@@ -44,8 +44,8 @@
   };
 
   /**
-   * Confirma o fechamento. A confirmacao so aparece se a sessao ja estava
-   * conectada, entao aceitamos os dois caminhos e reportamos qual ocorreu.
+   * Confirma o fechamento. A confirmacao só aparece se a sessão já estava
+   * conectada, então aceitamos os dois caminhos e reportamos qual ocorreu.
    */
   const confirmarSePreciso = async () => {
     const limite = Date.now() + 2500;
@@ -53,7 +53,7 @@
       const backdrop = $('.modal-backdrop');
       if (backdrop) {
         [...backdrop.querySelectorAll('.modal-foot button')].pop().click();
-        await waitFor(() => !$('.modal-backdrop'), 'dialogo fechar', 3000);
+        await waitFor(() => !$('.modal-backdrop'), 'diálogo fechar', 3000);
         return 'confirmado';
       }
       await sleep(60);
@@ -66,8 +66,8 @@
     const logo = $('.welcome-logo');
     record(
       !!logo && logo.complete && logo.naturalWidth > 0,
-      'o icone de assets/ carrega na tela inicial (CSP nao bloqueia)',
-      logo ? `naturalWidth=${logo.naturalWidth}` : 'elemento nao existe'
+      'o icone de assets/ carrega na tela inicial (CSP não bloqueia)',
+      logo ? `naturalWidth=${logo.naturalWidth}` : 'elemento não existe'
     );
     record(!!$('.brand-logo'), 'o icone aparece na marca da barra lateral');
 
@@ -81,7 +81,7 @@
       `--brand-grad = ${css.getPropertyValue('--brand-grad').trim()}`
     );
 
-    log.push('\n[split de paineis]');
+    log.push('\n[split de painéis]');
 
     // --- abre um shell local pelo caminho normal da interface ------------
     $('#welcome [data-action="shell"]').click();
@@ -92,7 +92,7 @@
     await waitFor(() => $('.tab-view.active .xterm'), 'terminal montado');
     record(tabs().length === 1, 'abre uma aba com um painel');
 
-    // O shell local emite `ready` antes de o renderer saber o id da conexao;
+    // O shell local emite `ready` antes de o renderer saber o id da conexão;
     // se a fila de eventos regredir, a aba fica presa em "conectando".
     let statusFinal = '';
     const conectou = await waitFor(
@@ -102,7 +102,7 @@
       },
       'status virar conectado', 6000
     ).catch(() => false);
-    record(!!conectou, 'o status chega a "conectado" (eventos iniciais nao se perdem)', statusFinal);
+    record(!!conectou, 'o status chega a "conectado" (eventos iniciais não se perdem)', statusFinal);
 
     const primeiroPaneId = leaves()[0].dataset.paneId;
 
@@ -114,26 +114,26 @@
       'Ctrl+Shift+Direita divide lado a lado',
       $('.tab-view.active .split') ? undefined : 'nenhum elemento .split no DOM'
     );
-    record(tabs().length === 1, 'a divisao acontece DENTRO da aba, sem criar outra');
-    record($$('.tab-view.active .split-handle').length === 1, 'cria uma divisoria arrastavel');
+    record(tabs().length === 1, 'a divisão acontece DENTRO da aba, sem criar outra');
+    record($$('.tab-view.active .split-handle').length === 1, 'cria uma divisoria arrastável');
     record(
       !!$('#tabs .tab .tab-count'),
-      'a aba mostra a contagem de paineis'
+      'a aba mostra a contagem de painéis'
     );
 
     // o terminal do primeiro painel precisa ter sobrevivido ao remanejo do DOM
     const primeiroAindaVivo = leaves().some(
       (l) => l.dataset.paneId === primeiroPaneId && l.querySelector('.xterm')
     );
-    record(primeiroAindaVivo, 'o terminal ja aberto sobrevive ao split (nao e recriado)');
+    record(primeiroAindaVivo, 'o terminal já aberto sobrevive ao split (não é recriado)');
 
     // --- divide abaixo ----------------------------------------------------
     key('ArrowDown', { ctrl: true, shift: true });
     await waitFor(() => leaves().length === 3, 'terceiro painel');
     record(!!$('.tab-view.active .split.col'), 'Ctrl+Shift+Abaixo divide na horizontal');
-    record($$('.tab-view.active .split-handle').length === 2, 'duas divisorias com tres paineis');
+    record($$('.tab-view.active .split-handle').length === 2, 'duas divisorias com três painéis');
 
-    // --- foco e navegacao -------------------------------------------------
+    // --- foco e navegação -------------------------------------------------
     const focadoAntes = $('.tab-view.active .leaf.focused');
     record(!!focadoAntes, 'o painel em foco fica destacado');
 
@@ -162,12 +162,12 @@
       .getBoundingClientRect().width;
     record(
       Math.abs(depois - antes) > 40,
-      'arrastar a divisoria redimensiona os paineis',
+      'arrastar a divisoria redimensiona os painéis',
       `largura ${Math.round(antes)} -> ${Math.round(depois)}`
     );
 
     // --- fecha um painel --------------------------------------------------
-    // Espera o shell conectar de fato: e o caminho que pede confirmacao.
+    // Espera o shell conectar de fato: é o caminho que pede confirmacao.
     await waitFor(
       () => $$('#tabs .tab .tab-state.ok').length > 0,
       'shell conectar',
@@ -177,21 +177,21 @@
     key('w', { ctrl: true, shift: true });
     await confirmarSePreciso();
     await waitFor(() => leaves().length === 2, 'painel fechado');
-    record(true, 'Ctrl+Shift+W fecha so o painel em foco');
-    record(tabs().length === 1, 'a aba continua aberta com os paineis restantes');
+    record(true, 'Ctrl+Shift+W fecha só o painel em foco');
+    record(tabs().length === 1, 'a aba continua aberta com os painéis restantes');
     record(
       $$('.tab-view.active .split-handle').length === 1,
-      'a divisao que ficou com um filho so e desfeita'
+      'a divisão que ficou com um filho só é desfeita'
     );
 
     // --- fecha a aba inteira ----------------------------------------------
     key('w', { ctrl: true });
     await confirmarSePreciso();
     await waitFor(() => tabs().length === 0, 'aba fechada');
-    record(leaves().length === 0, 'Ctrl+W fecha a aba com todos os paineis');
+    record(leaves().length === 0, 'Ctrl+W fecha a aba com todos os painéis');
     record(
       !$('#welcome').classList.contains('hidden'),
-      'a tela de boas-vindas volta quando nao ha mais abas'
+      'a tela de boas-vindas volta quando não há mais abas'
     );
   } catch (err) {
     record(false, 'roteiro interrompido', err.message);

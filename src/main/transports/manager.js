@@ -1,7 +1,7 @@
 'use strict';
 /**
- * Registro central das conexoes vivas. O renderer nunca toca em sockets:
- * ele fala por id de conexao e recebe eventos `tsm:conn:*`.
+ * Registro central das conexões vivas. O renderer nunca toca em sockets:
+ * ele fala por id de conexão e recebe eventos `tsm:conn:*`.
  */
 const crypto = require('node:crypto');
 const { SshConnection } = require('./ssh');
@@ -18,12 +18,12 @@ function emit(sender, channel, payload) {
   if (sender && !sender.isDestroyed()) sender.send(channel, payload);
 }
 
-/** Junta config da sessao + overrides do "conectar como" da UI. */
+/** Junta config da sessão + overrides do "conectar como" da UI. */
 function resolveConfig(session, overrides = {}) {
   return { ...(session ? session.config : {}), ...overrides };
 }
 
-/** Le os segredos da sessao e da identidade vinculada (identidade e o fallback). */
+/** Lê os segredos da sessão e da identidade vinculada (identidade é o fallback). */
 function resolveSecrets(session, overrides = {}) {
   const out = {};
   if (session) {
@@ -55,14 +55,14 @@ function build(type, config, secrets) {
     case 'serial':
       return new SerialConnection(config);
     default:
-      throw new Error(`Tipo de sessao nao suportado: ${type}`);
+      throw new Error(`Tipo de sessão não suportado: ${type}`);
   }
 }
 
 async function create(sender, { sessionId, type, config: inlineConfig, secrets: inlineSecrets, cols, rows }) {
   const session = sessionId ? repo.sessions.find(sessionId) : null;
   const kind = type || (session && session.type);
-  if (!kind) throw new Error('Sessao inexistente');
+  if (!kind) throw new Error('Sessão inexistente');
 
   const config = { ...resolveConfig(session, inlineConfig), cols, rows };
   const secrets = resolveSecrets(session, inlineSecrets);
@@ -73,7 +73,7 @@ async function create(sender, { sessionId, type, config: inlineConfig, secrets: 
     id,
     sessionId: sessionId || null,
     type: kind,
-    name: (session && session.name) || config.host || config.path || config.shellPath || 'Sessao',
+    name: (session && session.name) || config.host || config.path || config.shellPath || 'Sessão',
     target: conn.target
   };
 
@@ -82,10 +82,10 @@ async function create(sender, { sessionId, type, config: inlineConfig, secrets: 
   });
   live.set(id, { conn, meta, logId, sender });
 
-  // Transportes sincronos (o shell local) emitem `ready` — e ate dados — antes
-  // de `create()` retornar, ou seja, antes de o renderer saber o id da conexao.
-  // Esses eventos ficam numa fila e so saem depois da resposta do IPC; sem isso
-  // a aba ficava eternamente "conectando" com o terminal ja funcionando.
+  // Transportes síncronos (o shell local) emitem `ready` — e até dados — antes
+  // de `create()` retornar, ou seja, antes de o renderer saber o id da conexão.
+  // Esses eventos ficam numa fila e só saem depois da resposta do IPC; sem isso
+  // a aba ficava eternamente "conectando" com o terminal já funcionando.
   let liberado = false;
   const fila = [];
   const enviar = (canal, payload) => {
@@ -104,7 +104,7 @@ async function create(sender, { sessionId, type, config: inlineConfig, secrets: 
     enviar('tsm:conn:ready', { id, meta });
     if (sessionId) repo.sessions.touch(sessionId);
   });
-  // `p.id` e o id do prompt, distinto do id da conexao — nao achatar num objeto so.
+  // `p.id` é o id do prompt, distinto do id da conexão — não achatar num objeto só.
   conn.on('prompt', (p) => enviar('tsm:conn:prompt', { id, prompt: p }));
   conn.on('hostkey', (h) => enviar('tsm:conn:hostkey', { id, ...h }));
   conn.on('error', (err) => {
@@ -118,7 +118,7 @@ async function create(sender, { sessionId, type, config: inlineConfig, secrets: 
     enviar('tsm:conn:close', { id, code });
   });
 
-  // Gravacao automatica quando a sessao pede.
+  // Gravação automática quando a sessão pede.
   if (config.logging && config.logging.enabled) {
     try {
       logger.start(id, {
@@ -129,7 +129,7 @@ async function create(sender, { sessionId, type, config: inlineConfig, secrets: 
         meta: { name: meta.name, host: config.host, username: config.username, type: kind }
       });
     } catch (err) {
-      enviar('tsm:conn:error', { id, message: `Log da sessao: ${err.message}` });
+      enviar('tsm:conn:error', { id, message: `Log da sessão: ${err.message}` });
     }
   }
 
@@ -141,8 +141,8 @@ async function create(sender, { sessionId, type, config: inlineConfig, secrets: 
     throw err;
   }
 
-  // `setImmediate` e um macrotask: roda depois de a resposta do IPC ter sido
-  // enviada, entao o renderer ja associou o id ao painel quando a fila esvazia.
+  // `setImmediate` é um macrotask: roda depois de a resposta do IPC ter sido
+  // enviada, então o renderer já associou o id ao painel quando a fila esvazia.
   setImmediate(() => {
     liberado = true;
     for (const [canal, payload] of fila) emit(sender, canal, payload);
@@ -172,17 +172,17 @@ function closeAll() {
   live.clear();
 }
 
-/** Usado pelo painel SFTP para reaproveitar a conexao SSH ja aberta. */
+/** Usado pelo painel SFTP para reaproveitar a conexão SSH já aberta. */
 function sshConnectionFor(id) {
   const c = at(id);
   if (!c || typeof c.sftp !== 'function') return null;
   return c;
 }
 
-// ------------------------------------------------------ log de sessao -----
+// ------------------------------------------------------ log de sessão -----
 function startLog(id, options) {
   const entry = live.get(id);
-  if (!entry) throw new Error('Conexao nao esta ativa');
+  if (!entry) throw new Error('Conexão não está ativa');
   const cfg = entry.conn.config || {};
   return logger.start(id, {
     ...options,
@@ -195,7 +195,7 @@ function startLog(id, options) {
 const stopLog = (id) => logger.stop(id);
 const logStatus = (id) => logger.status(id);
 
-// ---------------------------------------------------------- tuneis --------
+// ---------------------------------------------------------- túneis --------
 function forwardsOf(id) {
   const c = at(id);
   return c && typeof c.listForwards === 'function' ? c.listForwards() : [];
@@ -203,7 +203,7 @@ function forwardsOf(id) {
 
 function addForward(id, spec) {
   const c = at(id);
-  if (!c || typeof c.addForward !== 'function') throw new Error('Esta conexao nao suporta tuneis');
+  if (!c || typeof c.addForward !== 'function') throw new Error('Esta conexão não suporta túneis');
   c.addForward(spec);
   return c.listForwards();
 }
@@ -215,7 +215,7 @@ function removeForward(id, forwardId) {
   return c.listForwards();
 }
 
-/** Acesso generico a conexao viva, para recursos especificos de um transporte. */
+/** Acesso genérico a conexão viva, para recursos específicos de um transporte. */
 const connectionFor = (id) => at(id);
 
 module.exports = {

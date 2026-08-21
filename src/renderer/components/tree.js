@@ -1,5 +1,5 @@
 'use strict';
-/** Arvore de sessoes: pastas aninhadas, filtro, drag & drop e menu de contexto. */
+/** Árvore de sessões: pastas aninhadas, filtro, drag & drop e menu de contexto. */
 import { el, $, contextMenu, confirmDialog, promptDialog, guard, toast } from './ui.js';
 import { state, buildTree, reloadTree, emit } from './state.js';
 
@@ -49,7 +49,7 @@ export function render() {
 
   root.scrollTop = scroll;
   $('#session-count').textContent =
-    `${state.sessions.length} ${state.sessions.length === 1 ? 'sessao' : 'sessoes'}`;
+    `${state.sessions.length} ${state.sessions.length === 1 ? 'sessão' : 'sessões'}`;
 }
 
 function renderNode(container, node, depth, filtering) {
@@ -117,7 +117,7 @@ function describe(node) {
   const s = node.data;
   const parts = [TYPE_LABEL[s.type] || s.type, shortTarget(s)];
   if (s.notes) parts.push(`\n${s.notes}`);
-  if (s.last_used_at) parts.push(`\nUltimo uso: ${new Date(s.last_used_at).toLocaleString('pt-BR')}`);
+  if (s.last_used_at) parts.push(`\nÚltimo uso: ${new Date(s.last_used_at).toLocaleString('pt-BR')}`);
   return parts.filter(Boolean).join(' · ');
 }
 
@@ -230,7 +230,7 @@ function clearDropMarks() {
 async function applyDrop(src, target) {
   if (!src) return;
   await guard(async () => {
-    // Ordem: recalculamos os irmaos do destino e reinserimos na posicao pedida.
+    // Ordem: recalculamos os irmãos do destino e reinserimos na posição pedida.
     const siblings = siblingsOf(target.parentId, src.kind);
     const filtered = siblings.filter((s) => s.id !== src.id);
 
@@ -271,23 +271,23 @@ function siblingsOf(parentId, kind) {
 // -------------------------------------------------------------- menus -----
 function rootMenu(e) {
   contextMenu(e, [
-    { label: 'Nova sessao…', key: 'Ctrl+N', onClick: () => handlers.onNewSession(null) },
+    { label: 'Nova sessão…', key: 'Ctrl+N', onClick: () => handlers.onNewSession(null) },
     { label: 'Nova pasta…', key: 'Ctrl+Shift+F', onClick: () => newFolder(null) },
     { separator: true },
     { label: 'Expandir tudo', onClick: expandAll },
     { label: 'Recolher tudo', onClick: collapseAll },
     { separator: true },
-    { label: 'Importar sessoes…', onClick: () => handlers.onImport() },
-    { label: 'Exportar sessoes…', onClick: () => handlers.onExport() }
+    { label: 'Importar sessões…', onClick: () => handlers.onImport() },
+    { label: 'Exportar sessões…', onClick: () => handlers.onExport() }
   ]);
 }
 
 function folderMenu(e, folder) {
   contextMenu(e, [
-    { label: 'Nova sessao aqui…', onClick: () => handlers.onNewSession(folder.id) },
+    { label: 'Nova sessão aqui…', onClick: () => handlers.onNewSession(folder.id) },
     { label: 'Nova subpasta…', onClick: () => newFolder(folder.id) },
     { separator: true },
-    { label: 'Abrir todas as sessoes', onClick: () => openFolder(folder.id) },
+    { label: 'Abrir todas as sessões', onClick: () => openFolder(folder.id) },
     { separator: true },
     { label: 'Renomear…', key: 'F2', onClick: () => renameFolder(folder) },
     { label: 'Cor…', onClick: () => pickFolderColor(folder) },
@@ -317,13 +317,13 @@ function sessionMenu(e, session) {
       onClick: () => copyCommand(session)
     },
     { separator: true },
-    { label: 'Excluir sessao', danger: true, onClick: () => removeSession(session) }
+    { label: 'Excluir sessão', danger: true, onClick: () => removeSession(session) }
   ]);
 }
 
-// ------------------------------------------------------------- acoes ------
+// ------------------------------------------------------------- ações ------
 export async function newFolder(parentId) {
-  const name = await promptDialog({ title: 'Nova pasta', label: 'Nome', placeholder: 'Producao' });
+  const name = await promptDialog({ title: 'Nova pasta', label: 'Nome', placeholder: 'Produção' });
   if (!name) return;
   await guard(async () => {
     const f = await window.tsm.folders.create({ name, parentId });
@@ -370,8 +370,8 @@ async function removeFolder(folder) {
     title: 'Excluir pasta',
     message: `Excluir "${folder.name}"?`,
     detail: kids
-      ? `${kids} sessao(oes) direta(s) serao excluidas junto com as subpastas.`
-      : 'As subpastas tambem serao removidas.',
+      ? `${kids} sessão(oes) direta(s) serão excluidas junto com as subpastas.`
+      : 'As subpastas também serão removidas.',
     confirmLabel: 'Excluir tudo',
     danger: true
   });
@@ -394,9 +394,9 @@ async function duplicate(session) {
 
 async function removeSession(session) {
   const ok = await confirmDialog({
-    title: 'Excluir sessao',
+    title: 'Excluir sessão',
     message: `Excluir "${session.name}"?`,
-    detail: 'As credenciais salvas dessa sessao tambem serao apagadas.',
+    detail: 'As credenciais salvas dessa sessão também serão apagadas.',
     confirmLabel: 'Excluir',
     danger: true
   });
@@ -405,7 +405,7 @@ async function removeSession(session) {
     await window.tsm.sessions.remove(session.id);
     await reloadTree();
     render();
-    toast('Sessao excluida', 'ok');
+    toast('Sessão excluida', 'ok');
   });
 }
 
@@ -429,7 +429,7 @@ async function openFolder(folderId) {
   if (list.length > 8) {
     const ok = await confirmDialog({
       title: 'Abrir pasta inteira',
-      message: `Abrir ${list.length} sessoes de uma vez?`,
+      message: `Abrir ${list.length} sessões de uma vez?`,
       confirmLabel: 'Abrir'
     });
     if (!ok) return;

@@ -17,10 +17,10 @@ asarUnpack:
   - "**/node_modules/node-sqlite3-wasm/**"
   - "**/node_modules/better-sqlite3/**"
 
-# O TSM e portatil: nada de instalador, nada de registro do Windows.
-# `dir`      -> pasta pronta com o executavel e os arquivos de apoio
-# `portable` -> um unico .exe que se auto-extrai e roda
-# `AppImage` -> um unico arquivo executavel no Linux
+# O TSM e portátil: nada de instalador, nada de registro do Windows.
+# `dir`      -> pasta pronta com o executável e os arquivos de apoio
+# `portable` -> um único .exe que se auto-extrai e roda
+# `AppImage` -> um único arquivo executável no Linux
 win:
   icon: assets/app.ico
   target:
@@ -47,7 +47,7 @@ linux:
       arch: [x64]
   category: Network
   maintainer: Diego Carlesso
-  synopsis: Gerenciador de sessoes SSH/Telnet/Shell/SFTP
+  synopsis: Gerenciador de sessões SSH/Telnet/Shell/SFTP
   artifactName: TSM-${version}-${arch}.${ext}
 
 mac:
@@ -66,7 +66,7 @@ mac:
   artifactName: TSM-${version}-${arch}.${ext}
 
 dmg:
-  # O .dmg aqui e so um envelope para arrastar o .app para onde quiser —
+  # O .dmg aqui e só um envelope para arrastar o .app para onde quiser —
   # o app roda de qualquer pasta, inclusive de um pendrive.
   artifactName: TSM-${version}-${arch}.dmg
   writeUpdateInfo: false

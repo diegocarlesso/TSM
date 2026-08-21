@@ -1,5 +1,5 @@
 /**
- * Roteiro de teste da previa de personalizacao e da sessao serial.
+ * Roteiro de teste da prévia de personalização e da sessão serial.
  *
  *   TSM_SMOKE=1 TSM_UITEST=scripts/uitest-config.js npx electron .
  *
@@ -30,7 +30,7 @@
     throw new Error(`tempo esgotado esperando: ${label}`);
   };
 
-  /** Acha o controle que fica na celula seguinte a um rotulo do formulario. */
+  /** Acha o controle que fica na célula seguinte a um rotulo do formulario. */
   const campo = (rotulo, raiz = document) => {
     const label = $$('.form-grid label', raiz).find((l) => l.textContent.trim() === rotulo);
     return label ? label.nextElementSibling : null;
@@ -50,13 +50,13 @@
   };
 
   try {
-    // ------------------------------------------- previa de personalizacao --
-    log.push('\n[previa de personalizacao]');
+    // ------------------------------------------- prévia de personalização --
+    log.push('\n[prévia de personalização]');
 
     $('#btn-settings').click();
-    await waitFor(() => $('.modal-backdrop'), 'dialogo de configuracoes');
-    const previa = await waitFor(() => $('.theme-preview'), 'previa do tema');
-    record(true, 'o botao de configuracoes abre o dialogo com a previa');
+    await waitFor(() => $('.modal-backdrop'), 'diálogo de configurações');
+    const previa = await waitFor(() => $('.theme-preview'), 'prévia do tema');
+    record(true, 'o botão de configurações abre o diálogo com a prévia');
 
     const temas = [...campo('Tema do terminal').querySelectorAll('select option')]
       .map((o) => o.value);
@@ -69,20 +69,20 @@
     trocarSelect(campo('Tema do terminal'), outro);
     await sleep(350);
 
-    const previaDepois = await waitFor(() => $('.theme-preview'), 'previa redesenhada');
+    const previaDepois = await waitFor(() => $('.theme-preview'), 'prévia redesenhada');
     const fundoDepois = getComputedStyle(previaDepois).backgroundColor;
     record(
       fundoDepois !== fundoAntes && previaDepois.dataset.themeId === outro,
-      'trocar o tema redesenha a previa',
+      'trocar o tema redesenha a prévia',
       `tema ${temaAtual} -> ${previaDepois.dataset.themeId}; fundo ${fundoAntes} -> ${fundoDepois}`
     );
 
-    // a previa tambem precisa refletir a tipografia
+    // a prévia também precisa refletir a tipografia
     const abaTerminal = $$('.tabs-strip button').find((b) => b.textContent.trim() === 'Terminal');
     abaTerminal.click();
     await sleep(200);
 
-    const previaTerminal = await waitFor(() => $('.theme-preview'), 'previa na aba Terminal');
+    const previaTerminal = await waitFor(() => $('.theme-preview'), 'prévia na aba Terminal');
     const tamanhoAntes = getComputedStyle(previaTerminal).fontSize;
     const inputTamanho = campo('Tamanho');
     inputTamanho.value = '22';
@@ -92,21 +92,21 @@
     const tamanhoDepois = getComputedStyle($('.theme-preview')).fontSize;
     record(
       tamanhoDepois !== tamanhoAntes && tamanhoDepois.startsWith('22'),
-      'mudar o tamanho da fonte aparece na previa',
+      'mudar o tamanho da fonte aparece na prévia',
       `${tamanhoAntes} -> ${tamanhoDepois}`
     );
 
-    // devolve o tamanho para nao sujar o estado
+    // devolve o tamanho para não sujar o estado
     inputTamanho.value = '14';
     inputTamanho.dispatchEvent(new Event('input', { bubbles: true }));
     await sleep(200);
     await fecharModal();
 
-    // ------------------------------------------------------ sessao serial --
-    log.push('\n[sessao serial]');
+    // ------------------------------------------------------ sessão serial --
+    log.push('\n[sessão serial]');
 
     $('#btn-new-session').click();
-    await waitFor(() => $('.modal-backdrop'), 'editor de sessao');
+    await waitFor(() => $('.modal-backdrop'), 'editor de sessão');
 
     const tipos = [...campo('Tipo').querySelectorAll('option')].map((o) => o.value);
     record(tipos.includes('serial'), 'o tipo Serial (COM) aparece na lista', tipos.join(', '));
@@ -119,26 +119,26 @@
 
     const portas = [...campo('Porta').querySelectorAll('option')]
       .map((o) => o.value).filter(Boolean);
-    record(true, `portas detectadas na maquina: ${portas.length ? portas.join(', ') : 'nenhuma'}`);
+    record(true, `portas detectadas na máquina: ${portas.length ? portas.join(', ') : 'nenhuma'}`);
 
     const bauds = [...campo('Velocidade (baud)').querySelectorAll('option')].map((o) => o.value);
     record(bauds.includes('115200'), 'a lista de velocidades vem do processo principal');
 
-    // Autenticacao e Tuneis nao fazem sentido numa serial.
+    // Autenticação e Túneis não fazem sentido numa serial.
     const abas = $$('.tabs-strip button').map((b) => b.textContent.trim());
     record(
-      !abas.includes('Autenticacao') && !abas.includes('Tuneis'),
-      'abas que nao se aplicam ao serial somem',
+      !abas.includes('Autenticação') && !abas.includes('Túneis'),
+      'abas que não se aplicam ao serial somem',
       abas.join(', ')
     );
 
-    const abaAvancado = $$('.tabs-strip button').find((b) => b.textContent.trim() === 'Avancado');
+    const abaAvancado = $$('.tabs-strip button').find((b) => b.textContent.trim() === 'Avançado');
     abaAvancado.click();
     await sleep(250);
 
-    record(!!campo('Bits de dados'), 'a aba Avancado traz bits de dados');
-    record(!!campo('Paridade'), 'a aba Avancado traz paridade');
-    record(!!campo('Enter envia'), 'da para escolher o fim de linha (CR/LF/CRLF)');
+    record(!!campo('Bits de dados'), 'a aba Avançado traz bits de dados');
+    record(!!campo('Paridade'), 'a aba Avançado traz paridade');
+    record(!!campo('Enter envia'), 'dá para escolher o fim de linha (CR/LF/CRLF)');
 
     await fecharModal();
   } catch (err) {

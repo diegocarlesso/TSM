@@ -1,5 +1,5 @@
 'use strict';
-/** Editor de sessao (SSH / Telnet / Shell / SFTP) e conexao rapida. */
+/** Editor de sessão (SSH / Telnet / Shell / SFTP) e conexão rápida. */
 import { el, modal, toast, guard, checkbox, select, promptDialog } from './ui.js';
 import { state, reloadTree, setting } from './state.js';
 
@@ -14,14 +14,14 @@ const TYPES = [
 const PARIDADES = [
   { value: 'none', label: 'Nenhuma' },
   { value: 'even', label: 'Par' },
-  { value: 'odd', label: 'Impar' },
+  { value: 'odd', label: 'Ímpar' },
   { value: 'mark', label: 'Mark' },
   { value: 'space', label: 'Space' }
 ];
 
 const FIM_DE_LINHA = [
-  { value: 'cr', label: 'CR - padrao em equipamento de rede' },
-  { value: 'lf', label: 'LF - padrao em Unix' },
+  { value: 'cr', label: 'CR - padrão em equipamento de rede' },
+  { value: 'lf', label: 'LF - padrão em Unix' },
   { value: 'crlf', label: 'CR+LF' }
 ];
 
@@ -50,7 +50,7 @@ function defaultConfig(type) {
 
 /**
  * Abre o editor. `session` nulo cria uma nova.
- * Devolve a sessao salva ou `undefined` se o usuario cancelou.
+ * Devolve a sessão salva ou `undefined` se o usuário cancelou.
  */
 export async function sessionDialog(session, { folderId = null } = {}) {
   const isNew = !session;
@@ -67,7 +67,7 @@ export async function sessionDialog(session, { folderId = null } = {}) {
     config: session ? structuredClone(session.config || {}) : defaultConfig('ssh')
   };
 
-  // Senhas nunca voltam do main; so sabemos se existem.
+  // Senhas nunca voltam do main; só sabemos se existem.
   const hasPassword = session ? await window.tsm.secrets.has('session', session.id, 'password') : false;
   const hasPassphrase = session ? await window.tsm.secrets.has('session', session.id, 'passphrase') : false;
   const pending = { password: undefined, passphrase: undefined, jumpPassword: undefined };
@@ -87,15 +87,15 @@ export async function sessionDialog(session, { folderId = null } = {}) {
     const strip = el('div', { class: 'tabs-strip' });
     const tabs = [
       ['geral', 'Geral'],
-      ['auth', 'Autenticacao'],
-      ['avancado', 'Avancado'],
-      ['tuneis', 'Tuneis'],
-      ['aparencia', 'Aparencia'],
+      ['auth', 'Autenticação'],
+      ['avançado', 'Avançado'],
+      ['túneis', 'Túneis'],
+      ['aparência', 'Aparência'],
       ['notas', 'Notas']
     ];
     for (const [key, label] of tabs) {
-      if (model.type === 'shell' && (key === 'auth' || key === 'tuneis')) continue;
-      if (model.type === 'serial' && (key === 'auth' || key === 'tuneis')) continue;
+      if (model.type === 'shell' && (key === 'auth' || key === 'túneis')) continue;
+      if (model.type === 'serial' && (key === 'auth' || key === 'túneis')) continue;
       strip.append(el('button', {
         class: activeTab === key ? 'active' : '',
         text: label,
@@ -140,17 +140,17 @@ export async function sessionDialog(session, { folderId = null } = {}) {
               : porta.path
           }))
         ];
-        // Uma porta salva pode nao existir agora (adaptador USB desconectado):
-        // ela continua na lista para nao sumir da configuracao da sessao.
+        // Uma porta salva pode não existir agora (adaptador USB desconectado):
+        // ela continua na lista para não sumir da configuração da sessão.
         if (c.path && !portasSeriais.some((porta) => porta.path === c.path)) {
-          opcoesPorta.push({ value: c.path, label: `${c.path} (nao conectada agora)` });
+          opcoesPorta.push({ value: c.path, label: `${c.path} (não conectada agora)` });
         }
 
         add('Porta', el('div', { class: 'inline' }, [
           select(opcoesPorta, c.path || '', (v) => { c.path = v; }),
           el('button', {
             text: 'Atualizar',
-            title: 'Reler as portas disponiveis',
+            title: 'Reler as portas disponíveis',
             onClick: async () => {
               portasSeriais = await window.tsm.serial.list().catch(() => []);
               rerender();
@@ -168,7 +168,7 @@ export async function sessionDialog(session, { folderId = null } = {}) {
         }));
       } else if (model.type === 'shell') {
         const shellOptions = [
-          { value: '', label: '(shell padrao do sistema)' },
+          { value: '', label: '(shell padrão do sistema)' },
           ...shells.map((s) => ({ value: s.path, label: `${s.label} — ${s.path}` }))
         ];
         add('Shell', select(shellOptions, c.shellPath || '', (v) => {
@@ -176,7 +176,7 @@ export async function sessionDialog(session, { folderId = null } = {}) {
           const found = shells.find((s) => s.path === v);
           c.shellArgs = found ? found.args : [];
         }));
-        add('Diretorio inicial', pathPicker(c.cwd || '', (v) => { c.cwd = v; }, true));
+        add('Diretório inicial', pathPicker(c.cwd || '', (v) => { c.cwd = v; }, true));
       } else {
         add('Host', el('input', {
           type: 'text', value: c.host || '', placeholder: '192.168.0.10 ou servidor.exemplo.com',
@@ -186,7 +186,7 @@ export async function sessionDialog(session, { folderId = null } = {}) {
           type: 'number', value: c.port || (model.type === 'telnet' ? 23 : 22), min: '1', max: '65535',
           onInput: (e) => { c.port = Number(e.target.value); }
         }));
-        add('Usuario', el('input', {
+        add('Usuário', el('input', {
           type: 'text', value: c.username || '',
           onInput: (e) => { c.username = e.target.value.trim(); }
         }));
@@ -201,18 +201,18 @@ export async function sessionDialog(session, { folderId = null } = {}) {
       ]));
 
       add('Etiquetas', el('input', {
-        type: 'text', value: model.tags.join(', '), placeholder: 'producao, cliente-x',
+        type: 'text', value: model.tags.join(', '), placeholder: 'produção, cliente-x',
         onInput: (e) => { model.tags = e.target.value.split(',').map((t) => t.trim()).filter(Boolean); }
       }), 'Separadas por virgula. Entram na busca.');
     }
 
     if (activeTab === 'auth' && model.type !== 'shell') {
       if (model.type === 'ssh' || model.type === 'sftp') {
-        add('Metodo', select(AUTH_TYPES, c.authType || 'password', (v) => { c.authType = v; rerender(); }));
+        add('Método', select(AUTH_TYPES, c.authType || 'password', (v) => { c.authType = v; rerender(); }));
 
         const identOptions = [
           { value: '', label: '(nenhuma — usar os campos abaixo)' },
-          ...state.identities.map((i) => ({ value: i.id, label: `${i.name} (${i.username || 'sem usuario'})` }))
+          ...state.identities.map((i) => ({ value: i.id, label: `${i.name} (${i.username || 'sem usuário'})` }))
         ];
         add('Credencial salva', select(identOptions, model.identityId || '', (v) => { model.identityId = v || null; }),
           'Reaproveita uma senha/chave cadastrada em Ferramentas > Credenciais.');
@@ -229,14 +229,14 @@ export async function sessionDialog(session, { folderId = null } = {}) {
       }
 
       if (model.type === 'telnet') {
-        addFull(checkbox('Fazer login automatico (envia usuario e senha nos prompts)',
+        addFull(checkbox('Fazer login automático (envia usuário e senha nos prompts)',
           !!c.autoLogin, (v) => { c.autoLogin = v; rerender(); }));
         if (c.autoLogin) {
           add('Senha', secretInput('password', hasPassword, pending));
-          add('Regex do prompt de usuario', el('input', {
+          add('Regex do prompt de usuário', el('input', {
             type: 'text', value: c.loginPrompt || '', placeholder: '(login|username)\\s*:\\s*$',
             onInput: (e) => { c.loginPrompt = e.target.value; }
-          }), 'Deixe vazio para usar o padrao.');
+          }), 'Deixe vazio para usar o padrão.');
           add('Regex do prompt de senha', el('input', {
             type: 'text', value: c.passwordPrompt || '', placeholder: '(password|senha)\\s*:\\s*$',
             onInput: (e) => { c.passwordPrompt = e.target.value; }
@@ -245,8 +245,8 @@ export async function sessionDialog(session, { folderId = null } = {}) {
       }
     }
 
-    if (activeTab === 'avancado') {
-      // Numa serial nao existe terminal remoto para anunciar tipo.
+    if (activeTab === 'avançado') {
+      // Numa serial não existe terminal remoto para anunciar tipo.
       if (model.type !== 'serial') add('Tipo de terminal', el('input', {
         type: 'text', value: c.terminalType || 'xterm-256color',
         onInput: (e) => { c.terminalType = e.target.value; }
@@ -254,12 +254,12 @@ export async function sessionDialog(session, { folderId = null } = {}) {
       add('Comando ao conectar', el('input', {
         type: 'text', value: c.initialCommand || '', placeholder: 'sudo -i',
         onInput: (e) => { c.initialCommand = e.target.value; }
-      }), 'Enviado ao terminal logo apos a conexao.');
+      }), 'Enviado ao terminal logo após a conexão.');
 
       if (model.type === 'ssh' || model.type === 'sftp') {
-        addFull(checkbox('Compressao (-C)', !!c.compression, (v) => { c.compression = v; }));
+        addFull(checkbox('Compressão (-C)', !!c.compression, (v) => { c.compression = v; }));
         addFull(checkbox('Encaminhamento X11 (-X)', !!c.x11Forward, (v) => { c.x11Forward = v; }));
-        addFull(checkbox('Manter conexao viva (keepalive)', c.keepalive !== false, (v) => { c.keepalive = v; }));
+        addFull(checkbox('Manter conexão viva (keepalive)', c.keepalive !== false, (v) => { c.keepalive = v; }));
         addFull(checkbox('Encaminhar agente SSH (-A)', !!c.agentForward, (v) => { c.agentForward = v; }));
         addFull(checkbox('Permitir algoritmos legados (equipamentos antigos)',
           !!c.legacyAlgorithms, (v) => { c.legacyAlgorithms = v; }));
@@ -272,8 +272,8 @@ export async function sessionDialog(session, { folderId = null } = {}) {
             c.jump = { ...(c.jump || {}), host: e.target.value.trim() };
             if (!c.jump.host) delete c.jump;
           }
-        }), 'Conecta ao destino atraves deste servidor (equivale ao -J do OpenSSH).');
-        add('Usuario do gateway', el('input', {
+        }), 'Conecta ao destino através deste servidor (equivale ao -J do OpenSSH).');
+        add('Usuário do gateway', el('input', {
           type: 'text', value: jump.username || '',
           onInput: (e) => { c.jump = { ...(c.jump || {}), username: e.target.value.trim() }; }
         }));
@@ -300,14 +300,14 @@ export async function sessionDialog(session, { folderId = null } = {}) {
         addFull(checkbox('Controle de fluxo por software (XON/XOFF)',
           !!(c.xon && c.xoff), (v) => { c.xon = v; c.xoff = v; }));
         add('Enter envia', select(FIM_DE_LINHA, c.newline || 'cr', (v) => { c.newline = v; }),
-          'Mandar o fim de linha errado e a causa mais comum de "conecta mas nao responde".');
-        addFull(checkbox('Eco local (mostrar o que voce digita)',
+          'Mandar o fim de linha errado é a causa mais comum de "conecta mas não responde".');
+        addFull(checkbox('Eco local (mostrar o que você digita)',
           !!c.localEcho, (v) => { c.localEcho = v; }));
         grid.append(el('div', {
           class: 'hint full',
-          text: 'Ligue o eco local so quando o equipamento nao devolve o que voce digita.'
+          text: 'Ligue o eco local só quando o equipamento não devolve o que você digita.'
         }));
-        add('Codificacao', select(
+        add('Codificação', select(
           [{ value: 'utf8', label: 'UTF-8' }, { value: 'latin1', label: 'ISO-8859-1 (latin1)' },
            { value: 'ascii', label: 'ASCII' }],
           c.encoding || 'utf8', (v) => { c.encoding = v; }
@@ -315,14 +315,14 @@ export async function sessionDialog(session, { folderId = null } = {}) {
       }
 
       if (model.type === 'telnet') {
-        add('Codificacao', select(
+        add('Codificação', select(
           [{ value: 'utf8', label: 'UTF-8' }, { value: 'latin1', label: 'ISO-8859-1 (latin1)' }],
           c.encoding || 'utf8', (v) => { c.encoding = v; }
         ));
       }
     }
 
-    if (activeTab === 'tuneis' && model.type !== 'shell' && model.type !== 'telnet') {
+    if (activeTab === 'túneis' && model.type !== 'shell' && model.type !== 'telnet') {
       const forwards = c.portForwards || (c.portForwards = []);
       const table = el('table', { class: 'grid' });
       table.append(el('thead', {}, el('tr', {}, [
@@ -344,17 +344,17 @@ export async function sessionDialog(session, { folderId = null } = {}) {
       table.append(tbody);
       addFull(table);
       addFull(el('button', {
-        text: '+ Adicionar tunel',
+        text: '+ Adicionar túnel',
         onClick: async () => {
           const spec = await promptDialog({
-            title: 'Novo tunel',
-            label: 'Especificacao',
+            title: 'Novo túnel',
+            label: 'Especificação',
             placeholder: 'L 8080 localhost 80',
             hint: 'Formato: L|R <portaLocal> <hostDestino> <portaDestino>. Ex.: L 5432 db.interno 5432'
           });
           if (!spec) return;
           const m = spec.trim().split(/\s+/);
-          if (m.length !== 4) return toast('Formato invalido', 'err');
+          if (m.length !== 4) return toast('Formato inválido', 'err');
           forwards.push({
             type: m[0].toUpperCase() === 'R' ? 'remote' : 'local',
             localHost: '127.0.0.1',
@@ -367,7 +367,7 @@ export async function sessionDialog(session, { folderId = null } = {}) {
       }));
     }
 
-    if (activeTab === 'aparencia') {
+    if (activeTab === 'aparência') {
       const themeOptions = [
         { value: '', label: '(usar o tema global)' },
         ...state.themes.map((t) => ({ value: t.id, label: t.name }))
@@ -386,7 +386,7 @@ export async function sessionDialog(session, { folderId = null } = {}) {
     if (activeTab === 'notas') {
       addFull(el('textarea', {
         value: model.notes || '',
-        placeholder: 'Contexto, chamados, contatos, procedimento de manutencao…',
+        placeholder: 'Contexto, chamados, contatos, procedimento de manutenção…',
         onInput: (e) => { model.notes = e.target.value; }
       }));
       if (model.config.raw) {
@@ -403,7 +403,7 @@ export async function sessionDialog(session, { folderId = null } = {}) {
   rerender();
 
   const result = await modal({
-    title: isNew ? 'Nova sessao' : `Editar — ${session.name}`,
+    title: isNew ? 'Nova sessão' : `Editar — ${session.name}`,
     width: 640,
     render: () => body,
     footer: (api) => [
@@ -418,7 +418,7 @@ export async function sessionDialog(session, { folderId = null } = {}) {
 
 async function persist(model, pending, isNew) {
   if (!model.name.trim()) {
-    toast('Informe um nome para a sessao', 'err');
+    toast('Informe um nome para a sessão', 'err');
     return undefined;
   }
   if (model.type === 'serial' && !model.config.path) {
@@ -448,23 +448,23 @@ async function persist(model, pending, isNew) {
       : await window.tsm.sessions.update(model.id, payload);
 
     for (const [field, value] of Object.entries(pending)) {
-      if (value === undefined) continue;                    // nao mexeu no campo
+      if (value === undefined) continue;                    // não mexeu no campo
       if (value === null) await window.tsm.secrets.clear('session', saved.id, field);
       else await window.tsm.secrets.set('session', saved.id, field, value);
     }
 
     await reloadTree();
-    toast(isNew ? 'Sessao criada' : 'Sessao salva', 'ok');
+    toast(isNew ? 'Sessão criada' : 'Sessão salva', 'ok');
     return saved;
   });
 }
 
 // ------------------------------------------------------------ widgets -----
-/** Campo de senha que distingue "nao mexi", "limpar" e "novo valor". */
+/** Campo de senha que distingue "não mexi", "limpar" e "novo valor". */
 function secretInput(field, alreadySet, pending) {
   const input = el('input', {
     type: 'password',
-    placeholder: alreadySet ? '•••••••• (guardada)' : 'nao definida',
+    placeholder: alreadySet ? '•••••••• (guardada)' : 'não definida',
     autocomplete: 'new-password',
     onInput: (e) => { pending[field] = e.target.value; }
   });
@@ -474,7 +474,7 @@ function secretInput(field, alreadySet, pending) {
     onClick: () => {
       pending[field] = null;
       input.value = '';
-      input.placeholder = '(sera removida ao salvar)';
+      input.placeholder = '(será removida ao salvar)';
     }
   });
   return el('div', { class: 'inline' }, [input, alreadySet ? clear : null]);
@@ -514,7 +514,7 @@ function folderPaths() {
     .sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
 }
 
-// ------------------------------------------------------ conexao rapida ----
+// ------------------------------------------------------ conexão rápida ----
 /** Barra estilo "ssh user@host -p 22" — conecta sem salvar. */
 export async function quickConnectDialog() {
   let text = '';
@@ -522,13 +522,13 @@ export async function quickConnectDialog() {
   let save = false;
 
   const input = el('input', {
-    type: 'text', placeholder: 'usuario@host:porta   ou   host',
+    type: 'text', placeholder: 'usuário@host:porta   ou   host',
     style: 'font-family:var(--font-mono)',
     onInput: (e) => { text = e.target.value; }
   });
 
   const res = await modal({
-    title: 'Conexao rapida',
+    title: 'Conexão rápida',
     width: 520,
     render: (api) => {
       input.addEventListener('keydown', (e) => {
@@ -536,10 +536,10 @@ export async function quickConnectDialog() {
       });
       return el('div', { class: 'form-grid' }, [
         el('label', { text: 'Destino' }), input,
-        el('div', { class: 'hint', text: 'Aceita "root@10.0.0.1:2222". A porta padrao vem do protocolo.' }),
+        el('div', { class: 'hint', text: 'Aceita "root@10.0.0.1:2222". A porta padrão vem do protocolo.' }),
         el('label', { text: 'Protocolo' }),
         select(TYPES.filter((t) => !['shell', 'serial'].includes(t.value)), type, (v) => { type = v; }),
-        el('div', { class: 'full' }, [checkbox('Salvar como sessao depois de conectar', false, (v) => { save = v; })])
+        el('div', { class: 'full' }, [checkbox('Salvar como sessão depois de conectar', false, (v) => { save = v; })])
       ]);
     },
     footer: (api) => [
@@ -552,7 +552,7 @@ export async function quickConnectDialog() {
 
   const parsed = parseTarget(text.trim(), type);
   if (!parsed.host) {
-    toast('Destino invalido', 'err');
+    toast('Destino inválido', 'err');
     return undefined;
   }
   return { type, config: parsed, save, name: `${parsed.username ? `${parsed.username}@` : ''}${parsed.host}` };

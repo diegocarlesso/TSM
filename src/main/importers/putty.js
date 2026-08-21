@@ -3,16 +3,16 @@
  * Importador de PuTTY. Aceita dois formatos:
  *
  *  1. `.reg` exportado de HKCU\Software\SimonTatham\PuTTY\Sessions (Windows);
- *  2. arquivos de `~/.putty/sessions/<nome>` (Linux/macOS), um por sessao.
+ *  2. arquivos de `~/.putty/sessions/<nome>` (Linux/macOS), um por sessão.
  *
- * O PuTTY nao guarda senhas, entao nada de segredo vem junto — so config.
+ * O PuTTY não guarda senhas, então nada de segredo vem junto — só config.
  */
 const fs = require('node:fs');
 const path = require('node:path');
 
 const PROTOCOL_MAP = { ssh: 'ssh', telnet: 'telnet', raw: 'telnet', rlogin: 'telnet', serial: 'serial' };
 
-/** Nomes de sessao no registro vem percent-encoded (%20, %5C...). */
+/** Nomes de sessão no registro vem percent-encoded (%20, %5C...). */
 function decodeName(name) {
   try {
     return decodeURIComponent(name.replace(/%(?![0-9A-Fa-f]{2})/g, '%25'));
@@ -66,15 +66,15 @@ function toSession(block, warnings) {
   const type = PROTOCOL_MAP[proto];
 
   if (!type) {
-    warnings.push(`"${block.name}": protocolo ${proto} nao suportado — ignorada.`);
+    warnings.push(`"${block.name}": protocolo ${proto} não suportado — ignorada.`);
     return null;
   }
   if (type === 'serial') {
-    warnings.push(`"${block.name}": sessoes seriais ainda nao sao suportadas — ignorada.`);
+    warnings.push(`"${block.name}": sessões seriais ainda não são suportadas — ignorada.`);
     return null;
   }
   if (!v.HostName) {
-    warnings.push(`"${block.name}": sem HostName — provavelmente e so um perfil de aparencia.`);
+    warnings.push(`"${block.name}": sem HostName — provavelmente é só um perfil de aparência.`);
     return null;
   }
 
@@ -88,7 +88,7 @@ function toSession(block, warnings) {
     config.authType = 'key';
     if (/\.ppk$/i.test(config.privateKeyPath)) {
       warnings.push(
-        `"${block.name}": a chave e .ppk (formato PuTTY). Converta para OpenSSH ` +
+        `"${block.name}": a chave é .ppk (formato PuTTY). Converta para OpenSSH ` +
         `(puttygen chave.ppk -O private-openssh -o chave.pem) antes de conectar.`
       );
     }
@@ -101,7 +101,7 @@ function toSession(block, warnings) {
   }
   if (v.RemoteCommand) config.initialCommand = String(v.RemoteCommand);
 
-  // Encaminhamentos: "L8080=localhost:80" vira um tunel local.
+  // Encaminhamentos: "L8080=localhost:80" vira um túnel local.
   const forwards = [];
   if (typeof v.PortForwardings === 'string' && v.PortForwardings) {
     for (const spec of v.PortForwardings.split('\t').filter(Boolean)) {
@@ -117,7 +117,7 @@ function toSession(block, warnings) {
   }
   if (forwards.length) config.portForwards = forwards;
 
-  // O nome pode carregar hierarquia se o usuario usou "Pasta/Sessao".
+  // O nome pode carregar hierarquia se o usuário usou "Pasta/Sessão".
   const parts = block.name.split(/[\\/]/).filter(Boolean);
   const name = parts.pop();
   const folderPath = parts.length ? parts.join('/') : null;
@@ -127,7 +127,7 @@ function toSession(block, warnings) {
 
 /** Entrada `.reg` (Buffer). */
 function parseRegistryExport(buffer) {
-  // .reg exportado pelo regedit e UTF-16LE com BOM.
+  // .reg exportado pelo regedit é UTF-16LE com BOM.
   let text;
   if (buffer[0] === 0xff && buffer[1] === 0xfe) text = buffer.toString('utf16le');
   else text = buffer.toString('utf8');
@@ -141,7 +141,7 @@ function parseRegistryExport(buffer) {
   return { folders, sessions, theme: null, warnings, stats: { total: sessions.length } };
 }
 
-/** Entrada: diretorio `~/.putty/sessions`. */
+/** Entrada: diretório `~/.putty/sessions`. */
 function parseSessionsDir(dir) {
   const warnings = [];
   const sessions = [];

@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------------- base -- */
 /*
  * Paleta derivada de assets/icon.png: azul #0090f0 -> lima #a8f018, com o
- * navy #003060 do lado escuro do simbolo. Os fundos sao esse navy dessaturado,
+ * navy #003060 do lado escuro do simbolo. Os fundos são esse navy dessaturado,
  * para a interface parecer o icone sem virar um borrao azul.
  */
 :root {
@@ -463,9 +463,9 @@ table.grid tbody tr:hover { background: var(--bg-hover); }
 ::-webkit-scrollbar-thumb { background: var(--bg-hover); border-radius: 5px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border); }
 
-/* ---------------------------------------------- split de paineis na aba -- */
-/* Uma view por aba; so a ativa aparece. Manter as inativas no DOM preserva o
-   buffer e o scroll dos terminais que estao em segundo plano. */
+/* ---------------------------------------------- split de painéis na aba -- */
+/* Uma view por aba; só a ativa aparece. Manter as inativas no DOM preserva o
+   buffer e o scroll dos terminais que estão em segundo plano. */
 .tab-view { position: absolute; inset: 0; display: none; }
 .tab-view.active { display: flex; }
 .tab-view > * { flex: 1; min-width: 0; min-height: 0; }
@@ -481,7 +481,7 @@ table.grid tbody tr:hover { background: var(--bg-hover); }
   min-height: 0;
   overflow: hidden;
 }
-/* A borda de foco so aparece quando ha mais de um painel — numa aba simples
+/* A borda de foco só aparece quando ha mais de um painel — numa aba simples
    ela seria ruido puro. */
 .leaf.focused::after {
   content: "";

@@ -1,10 +1,10 @@
 'use strict';
 /**
- * Geracao e inspecao de chaves SSH — o equivalente ao MobaKeyGen/PuTTYgen.
+ * Geração e inspeção de chaves SSH — o equivalente ao MobaKeyGen/PuTTYgen.
  *
- * Usa o gerador do proprio `ssh2`, que escreve no formato OPENSSH PRIVATE KEY
- * (o mesmo do `ssh-keygen`), entao a chave serve tanto aqui quanto no cliente
- * de linha de comando. Em modo portatil as chaves ficam em `data/keys`.
+ * Usa o gerador do próprio `ssh2`, que escreve no formato OPENSSH PRIVATE KEY
+ * (o mesmo do `ssh-keygen`), então a chave serve tanto aqui quanto no cliente
+ * de linha de comando. Em modo portátil as chaves ficam em `data/keys`.
  */
 const fs = require('node:fs');
 const os = require('node:os');
@@ -21,11 +21,11 @@ const TYPES = {
 
 /**
  * Gera um par de chaves.
- * `passphrase` vazio produz chave sem senha — aceitavel para automacao, mas o
- * chamador deve deixar isso explicito para o usuario.
+ * `passphrase` vazio produz chave sem senha — aceitável para automação, mas o
+ * chamador deve deixar isso explicito para o usuário.
  */
 function generate({ type = 'ed25519', bits, comment = '', passphrase = '' } = {}) {
-  if (!TYPES[type]) throw new Error(`Tipo de chave nao suportado: ${type}`);
+  if (!TYPES[type]) throw new Error(`Tipo de chave não suportado: ${type}`);
 
   const opts = { comment: comment || `${os.userInfo().username}@${os.hostname()}` };
   if (type === 'rsa') opts.bits = Number(bits) || 4096;
@@ -56,7 +56,7 @@ function fingerprintOf(publicKeyLine) {
   return `SHA256:${digest.replace(/=+$/, '')}`;
 }
 
-/** Grava o par no disco com as permissoes que o OpenSSH exige (0600). */
+/** Grava o par no disco com as permissões que o OpenSSH exige (0600). */
 function save(pair, { dir, name } = {}) {
   const targetDir = dir || paths.keysDir();
   fs.mkdirSync(targetDir, { recursive: true });
@@ -66,7 +66,7 @@ function save(pair, { dir, name } = {}) {
   const publicPath = `${privatePath}.pub`;
 
   if (fs.existsSync(privatePath)) {
-    throw new Error(`Ja existe uma chave chamada "${base}" em ${targetDir}`);
+    throw new Error(`Já existe uma chave chamada "${base}" em ${targetDir}`);
   }
 
   fs.writeFileSync(privatePath, pair.privateKey, { mode: 0o600 });
@@ -76,7 +76,7 @@ function save(pair, { dir, name } = {}) {
   return { privatePath, publicPath };
 }
 
-/** Le uma chave existente e conta o essencial sobre ela, sem expor o segredo. */
+/** Lê uma chave existente e conta o essencial sobre ela, sem expor o segredo. */
 function inspect(filePath, passphrase = '') {
   const raw = fs.readFileSync(filePath);
   const parsed = sshUtils.parseKey(raw, passphrase || undefined);
@@ -85,7 +85,7 @@ function inspect(filePath, passphrase = '') {
     if (/encrypted|passphrase/i.test(parsed.message)) {
       return { path: filePath, encrypted: true, needsPassphrase: true, error: parsed.message };
     }
-    throw new Error(`Nao foi possivel ler a chave: ${parsed.message}`);
+    throw new Error(`Não foi possível ler a chave: ${parsed.message}`);
   }
 
   const key = Array.isArray(parsed) ? parsed[0] : parsed;
@@ -143,7 +143,7 @@ function list() {
           info = { ...info, ...detail, name, dir };
         }
       } catch {
-        // Chave cifrada ou ilegivel: listamos assim mesmo, so sem os detalhes.
+        // Chave cifrada ou ilegível: listamos assim mesmo, só sem os detalhes.
         info.encrypted = true;
       }
       out.push(info);

@@ -27,7 +27,7 @@ function loadEngine() {
     engine = 'node-sqlite3-wasm';
   } catch (err) {
     throw new Error(
-      'Nenhum motor SQLite disponivel. Rode `npm install` novamente. ' +
+      'Nenhum motor SQLite disponível. Rode `npm install` novamente. ' +
       `Detalhe: ${err.message}`
     );
   }

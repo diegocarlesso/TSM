@@ -55,7 +55,7 @@ let openModals = 0;
 
 /**
  * Abre um modal. `render(api)` devolve o corpo; `api.close(result)` resolve.
- * A promise entrega `undefined` quando o usuario cancela.
+ * A promise entrega `undefined` quando o usuário cancela.
  */
 export function modal({ title, width, render, footer, onKeydown }) {
   return new Promise((resolve) => {

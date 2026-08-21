@@ -6,7 +6,7 @@ const BUILTIN_THEMES = [
     id: 'tsm-dark',
     name: 'TSM Dark',
     data: {
-      // Mesma familia do icone: fundo navy, ciano/lima como cores vivas.
+      // Mesma família do icone: fundo navy, ciano/lima como cores vivas.
       background: '#0c1422', foreground: '#dce7f5', cursor: '#9ee62c', cursorAccent: '#0c1422',
       selectionBackground: '#1d3a5c',
       black: '#16202f', red: '#ff5f56', green: '#8ed81c', yellow: '#f0b429',
@@ -113,7 +113,7 @@ const BUILTIN_THEMES = [
   }
 ];
 
-/** Aparencia da janela (fora do terminal). */
+/** Aparência da janela (fora do terminal). */
 const UI_THEMES = [
   { id: 'dark', name: 'Escuro' },
   { id: 'light', name: 'Claro' },

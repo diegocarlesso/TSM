@@ -2,13 +2,13 @@
 /**
  * Cofre de credenciais do TSM.
  *
- * Duas estrategias de cifragem, escolhidas por preferencia do usuario:
+ * Duas estratégias de cifragem, escolhidas por preferência do usuário:
  *
- *  - `safeStorage` (padrao): delega ao sistema operacional — DPAPI no Windows,
+ *  - `safeStorage` (padrão): delega ao sistema operacional — DPAPI no Windows,
  *    Keychain no macOS, libsecret/kwallet no Linux. Sem senha para digitar.
- *  - `aes-256-gcm`: senha mestra do proprio TSM, derivada com scrypt. Necessaria
- *    quando o usuario quer o mesmo banco em varias maquinas (modo portatil) ou
- *    quando o SO nao oferece keyring (Linux headless).
+ *  - `aes-256-gcm`: senha mestra do próprio TSM, derivada com scrypt. Necessária
+ *    quando o usuário quer o mesmo banco em varias máquinas (modo portátil) ou
+ *    quando o SO não oferece keyring (Linux headless).
  *
  * Em nenhum dos casos a senha em claro toca o disco.
  */
@@ -20,10 +20,10 @@ const repo = require('../store/repo');
 const SCRYPT = { N: 2 ** 15, r: 8, p: 1, keylen: 32 };
 const MAGIC = 'TSMv1';
 
-let masterKey = null;      // Buffer, apenas em memoria
+let masterKey = null;      // Buffer, apenas em memória
 let unlocked = false;
 
-// ------------------------------------------------------------ derivacao ----
+// ------------------------------------------------------------ derivação ----
 function deriveKey(passphrase, salt) {
   return crypto.scryptSync(passphrase, salt, SCRYPT.keylen, {
     N: SCRYPT.N, r: SCRYPT.r, p: SCRYPT.p, maxmem: 256 * 1024 * 1024
@@ -40,7 +40,7 @@ function sealWithKey(key, plaintext, salt) {
 
 function openWithKeyFactory(blob, keyFor) {
   const magic = blob.subarray(0, MAGIC.length).toString('ascii');
-  if (magic !== MAGIC) throw new Error('Envelope de credencial invalido ou corrompido');
+  if (magic !== MAGIC) throw new Error('Envelope de credencial inválido ou corrompido');
   let off = MAGIC.length;
   const salt = blob.subarray(off, off += 16);
   const iv = blob.subarray(off, off += 12);
@@ -88,7 +88,7 @@ function setMasterPassword(newPassphrase, currentPassphrase = null) {
       sealWithKey(masterKey, 'tsm-vault-ok', salt).toString('base64'));
   } else {
     if (!safeStorage.isEncryptionAvailable()) {
-      throw new Error('O sistema nao oferece armazenamento seguro; mantenha a senha mestra ativa.');
+      throw new Error('O sistema não oferece armazenamento seguro; mantenha a senha mestra ativa.');
     }
     masterKey = null;
     unlocked = false;
@@ -96,7 +96,7 @@ function setMasterPassword(newPassphrase, currentPassphrase = null) {
     repo.settings.set('vault.master.verifier', null);
   }
 
-  // 3. Regrava tudo com a nova estrategia.
+  // 3. Regrava tudo com a nova estratégia.
   const d = db.get();
   d.transaction(() => {
     for (const p of plain) {
@@ -146,7 +146,7 @@ function encrypt(value) {
     return { scheme: s, blob: safeStorage.encryptString(value) };
   }
   throw new Error(
-    'Nenhum mecanismo de cifragem disponivel. Defina uma senha mestra em Configuracoes > Seguranca.'
+    'Nenhum mecanismo de cifragem disponível. Defina uma senha mestra em Configurações > Segurança.'
   );
 }
 
@@ -154,7 +154,7 @@ function decrypt(blob, blobScheme) {
   if (blobScheme === 'safeStorage') return safeStorage.decryptString(Buffer.from(blob));
   if (!unlocked) throw new Error('Cofre bloqueado: informe a senha mestra');
   // O salt viaja no envelope apenas como metadado: `setMasterPassword` re-cifra
-  // todos os segredos ao rotacionar, entao a chave em memoria e sempre a correta.
+  // todos os segredos ao rotacionar, então a chave em memória é sempre a correta.
   return openWithKeyFactory(Buffer.from(blob), () => masterKey);
 }
 

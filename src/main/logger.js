@@ -1,7 +1,7 @@
 'use strict';
 /**
- * Gravacao da saida das sessoes em arquivo — o equivalente ao "session logging"
- * do MobaXterm. A gravacao vive no processo principal, entao continua rodando
+ * Gravação da saida das sessões em arquivo — o equivalente ao "session logging"
+ * do MobaXterm. A gravação vive no processo principal, então continua rodando
  * mesmo com a aba em segundo plano ou a janela minimizada.
  */
 const fs = require('node:fs');
@@ -10,7 +10,7 @@ const os = require('node:os');
 
 const streams = new Map();   // connectionId -> { stream, filePath, bytes, stripAnsi, timestamp }
 
-// Sequencias de escape ANSI: CSI (ESC [ ... ) e OSC (ESC ] ... BEL).
+// Sequências de escape ANSI: CSI (ESC [ ... ) e OSC (ESC ] ... BEL).
 const ANSI_RE =
   /[\u001B\u009B][[\]()#;?]*(?:(?:(?:[a-zA-Z\d]*(?:;[-a-zA-Z\d\/#&.:=?%@~_]*)*)?\u0007)|(?:(?:\d{1,4}(?:;\d{0,4})*)?[\dA-PR-TZcf-ntqry=><~]))/g;
 function pad(n, size = 2) {
@@ -23,7 +23,7 @@ function pad(n, size = 2) {
  */
 function resolvePath(template, meta) {
   const d = new Date();
-  // Proibidos em nome de arquivo no Windows, mais espacos em branco.
+  // Proibidos em nome de arquivo no Windows, mais espaços em branco.
   const safe = (s) => String(s || '').replace(/[<>:"/\\|?*\s]+/g, '_');
 
   let out = String(template || '')
@@ -69,7 +69,7 @@ function start(connectionId, options) {
   };
   streams.set(connectionId, entry);
 
-  const header = `=== TSM · ${options.meta?.name || 'sessao'} · ${new Date().toLocaleString('pt-BR')} ===\n`;
+  const header = `=== TSM · ${options.meta?.name || 'sessão'} · ${new Date().toLocaleString('pt-BR')} ===\n`;
   stream.write(header);
   return { filePath };
 }
@@ -101,7 +101,7 @@ function write(connectionId, chunk) {
 }
 
 /**
- * Encerra a gravacao. Devolve uma promise que so resolve apos o flush do
+ * Encerra a gravação. Devolve uma promise que só resolve após o flush do
  * stream — quem for ler o arquivo em seguida (a UI, um teste) precisa disso.
  */
 function stop(connectionId) {

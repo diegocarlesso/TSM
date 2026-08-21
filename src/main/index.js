@@ -9,7 +9,7 @@ const menu = require('./menu');
 const manager = require('./transports/manager');
 const { BUILTIN_THEMES, DEFAULT_SETTINGS } = require('../shared/themes');
 
-// Uma instancia so: a segunda foca a janela existente em vez de abrir outra.
+// Uma instancia só: a segunda foca a janela existente em vez de abrir outra.
 if (!app.requestSingleInstanceLock()) {
   app.quit();
   process.exit(0);
@@ -71,7 +71,7 @@ function createWindow() {
       }
     } catch (err) {
       // Salvar a geometria nunca pode impedir a janela de fechar.
-      console.error('[TSM] nao foi possivel salvar a geometria:', err.message);
+      console.error('[TSM] não foi possível salvar a geometria:', err.message);
     }
   };
   mainWindow.on('resize', debounce(persistBounds, 400));
@@ -103,11 +103,11 @@ function createWindow() {
       console.error('[renderer] processo caiu:', details));
   }
 
-  // Ganchos de teste, ativados so por variavel de ambiente:
+  // Ganchos de teste, ativados só por variável de ambiente:
   //   TSM_SMOKE=1              -> abre, confere que a interface montou e sai;
-  //   TSM_UITEST=<arquivo.js>  -> alem disso, roda um roteiro no renderer.
-  // O roteiro dirige a interface por eventos de DOM reais, entao nao existe
-  // nenhuma porta de teste exposta no codigo de producao.
+  //   TSM_UITEST=<arquivo.js>  -> além disso, roda um roteiro no renderer.
+  // O roteiro dirige a interface por eventos de DOM reais, então não existe
+  // nenhuma porta de teste exposta no código de produção.
   if (process.env.TSM_SMOKE || process.env.TSM_UITEST) {
     mainWindow.webContents.once('did-finish-load', () => {
       setTimeout(async () => {
@@ -128,8 +128,8 @@ function createWindow() {
           }
         }
 
-        // TSM_SHOT=<arquivo.png> salva uma captura da janela — util para
-        // conferir a aparencia sem depender de alguem olhar a tela.
+        // TSM_SHOT=<arquivo.png> salva uma captura da janela — útil para
+        // conferir a aparência sem depender de alguém olhar a tela.
         if (process.env.TSM_SHOT) {
           try {
             const img = await mainWindow.webContents.capturePage();
@@ -141,8 +141,8 @@ function createWindow() {
         }
 
         smokeExitCode = ok ? 0 : 1;
-        // `quit` (e nao `exit`) para passar pelo `before-quit`: fechar conexoes
-        // e o banco. `app.exit` deixaria processos filhos orfaos no Windows.
+        // `quit` (e não `exit`) para passar pelo `before-quit`: fechar conexões
+        // e o banco. `app.exit` deixaria processos filhos órfãos no Windows.
         app.quit();
         setTimeout(() => app.exit(smokeExitCode), 4000).unref();
       }, 2500);
@@ -172,7 +172,7 @@ app.whenReady().then(() => {
   db.open();
   seed();
 
-  // CSP restritiva: o renderer e local e nao carrega nada da rede.
+  // CSP restritiva: o renderer é local e não carrega nada da rede.
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
@@ -202,9 +202,9 @@ app.on('window-all-closed', () => {
 });
 
 // A ordem aqui importa: `before-quit` roda ANTES de as janelas fecharem, e o
-// handler de `close` ainda grava as dimensoes da janela no banco. Fechar o banco
-// aqui fazia essa gravacao estourar e o encerramento travar. Conexoes podem
-// cair cedo; o banco so fecha em `will-quit`, com todas as janelas ja fechadas.
+// handler de `close` ainda grava as dimensões da janela no banco. Fechar o banco
+// aqui fazia essa gravação estourar e o encerramento travar. Conexões podem
+// cair cedo; o banco só fecha em `will-quit`, com todas as janelas já fechadas.
 let shuttingDown = false;
 app.on('before-quit', () => {
   if (shuttingDown) return;
@@ -221,5 +221,5 @@ app.on('quit', () => {
 });
 
 process.on('uncaughtException', (err) => {
-  console.error('[TSM] excecao nao tratada:', err);
+  console.error('[TSM] exceção não tratada:', err);
 });

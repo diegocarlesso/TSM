@@ -1,10 +1,10 @@
 'use strict';
 /**
- * Importacao e exportacao de sessoes/configuracoes.
+ * Importação e exportação de sessões/configurações.
  *
- * Formato nativo: JSON (`.tsm.json`), legivel e versionado. Segredos NUNCA
+ * Formato nativo: JSON (`.tsm.json`), legível e versionado. Segredos NUNCA
  * saem em claro: ou ficam de fora, ou vao num bloco AES-256-GCM cifrado com
- * uma senha que o usuario digita na hora da exportacao.
+ * uma senha que o usuário digita na hora da exportação.
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -22,7 +22,7 @@ function buildExport({ includeSecrets = false, passphrase = null, sessionIds = n
   const sessions = sessionIds ? allSessions.filter((s) => sessionIds.includes(s.id)) : allSessions;
   const keepFolders = new Set();
 
-  // Mantem a cadeia de pastas ate a raiz das sessoes exportadas.
+  // Mantem a cadeia de pastas até a raiz das sessões exportadas.
   const foldersById = new Map(repo.folders.list().map((f) => [f.id, f]));
   for (const s of sessions) {
     let cur = s.folder_id;
@@ -59,12 +59,12 @@ function buildExport({ includeSecrets = false, passphrase = null, sessionIds = n
     secrets: null
   };
 
-  // Preferencias do cofre nao viajam: sal/verificador sao daquela instalacao.
+  // Preferências do cofre não viajam: sal/verificador são daquela instalação.
   delete payload.settings['vault.master.salt'];
   delete payload.settings['vault.master.verifier'];
 
   if (includeSecrets) {
-    if (!passphrase) throw new Error('Exportar credenciais exige uma senha de protecao do arquivo.');
+    if (!passphrase) throw new Error('Exportar credenciais exige uma senha de proteção do arquivo.');
     const bag = [];
     for (const s of payload.sessions) {
       for (const field of ['password', 'passphrase', 'jumpPassword', 'jumpPassphrase']) {
@@ -101,10 +101,10 @@ function exportToFile(filePath, options) {
 // --------------------------------------------------------------- import ----
 /**
  * Aplica uma estrutura neutra {folders, sessions} ao banco.
- * `strategy`: 'merge' (padrao, cria o que falta) | 'replace' (limpa antes).
+ * `strategy`: 'merge' (padrão, cria o que falta) | 'replace' (limpa antes).
  */
 function applyParsed(parsed, options = {}) {
-  // Uma transacao so para o import inteiro: ver o comentario em repo.tx().
+  // Uma transação só para o import inteiro: ver o comentário em repo.tx().
   return repo.tx(() => applyParsedInner(parsed, options));
 }
 
@@ -120,8 +120,8 @@ function applyParsedInner(parsed, { strategy = 'merge', targetFolderId = null } 
   }
 
   const existingFolders = repo.folders.list();
-  // Separador NUL: nenhum nome de pasta/sessao pode conte-lo, entao a chave
-  // composta nunca colide (ao contrario de um espaco ou barra).
+  // Separador NUL: nenhum nome de pasta/sessão pode conte-lo, então a chave
+  // composta nunca colide (ao contrário de um espaço ou barra).
   const folderKey = (parentId, name) => `${parentId || ''}\u0000${name.toLowerCase()}`;
   const existingByKey = new Map(existingFolders.map((f) => [folderKey(f.parent_id, f.name), f]));
 
@@ -170,9 +170,9 @@ function importNative(payload, options = {}) {
 }
 
 function importNativeInner(payload, { strategy = 'merge', passphrase = null } = {}) {
-  if (payload.format !== FORMAT) throw new Error('Arquivo nao e um export do TSM.');
+  if (payload.format !== FORMAT) throw new Error('Arquivo não é um export do TSM.');
   if (payload.version > VERSION) {
-    throw new Error(`Arquivo gerado por uma versao mais nova do TSM (v${payload.version}).`);
+    throw new Error(`Arquivo gerado por uma versão mais nova do TSM (v${payload.version}).`);
   }
 
   const stats = { folders: 0, sessions: 0, identities: 0, themes: 0, secrets: 0, skipped: 0 };
@@ -219,12 +219,12 @@ function importNativeInner(payload, { strategy = 'merge', passphrase = null } = 
   }
 
   if (payload.encrypted && payload.secrets) {
-    if (!passphrase) throw new Error('Este arquivo tem credenciais cifradas: informe a senha de protecao.');
+    if (!passphrase) throw new Error('Este arquivo tem credenciais cifradas: informe a senha de proteção.');
     let bag;
     try {
       bag = JSON.parse(vault.openExport(payload.secrets, passphrase));
     } catch {
-      throw new Error('Senha de protecao incorreta ou arquivo corrompido.');
+      throw new Error('Senha de proteção incorreta ou arquivo corrompido.');
     }
     for (const item of bag) {
       vault.write(item.ownerKind, item.ownerId, item.field, item.value);
@@ -247,7 +247,7 @@ function depthOf(folder, all) {
   return d;
 }
 
-/** Detecta o formato pelo conteudo e importa. */
+/** Detecta o formato pelo conteúdo e importa. */
 function importFromFile(filePath, options = {}) {
   const ext = path.extname(filePath).toLowerCase();
   const buffer = fs.readFileSync(filePath);
@@ -257,7 +257,7 @@ function importFromFile(filePath, options = {}) {
     if (payload.format === FORMAT) {
       return { source: 'tsm', stats: importNative(payload, options), warnings: [] };
     }
-    throw new Error('JSON nao reconhecido como export do TSM.');
+    throw new Error('JSON não reconhecido como export do TSM.');
   }
 
   if (ext === '.reg') {
@@ -274,7 +274,7 @@ function importFromFile(filePath, options = {}) {
     return { source: 'mobaxterm', stats, warnings: parsed.warnings, detected: parsed.stats };
   }
 
-  throw new Error(`Extensao nao suportada: ${ext}`);
+  throw new Error(`Extensão não suportada: ${ext}`);
 }
 
 /** Prévia sem gravar nada — a UI mostra antes de confirmar. */
@@ -300,7 +300,7 @@ function previewFile(filePath) {
       encrypted: !!payload.encrypted
     };
   }
-  throw new Error(`Extensao nao suportada: ${ext}`);
+  throw new Error(`Extensão não suportada: ${ext}`);
 }
 
 module.exports = { buildExport, exportToFile, importFromFile, previewFile, applyParsed, importNative, FORMAT, VERSION };

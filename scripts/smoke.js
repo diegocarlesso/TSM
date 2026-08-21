@@ -1,7 +1,7 @@
 /**
- * Teste de fumaca do processo principal SEM abrir o Electron.
- * Substitui o modulo `electron` por um duplo de teste e exercita
- * banco, repositorio, cofre, importadores e export/import.
+ * Teste de fumaça do processo principal SEM abrir o Electron.
+ * Substitui o módulo `electron` por um duplo de teste e exercita
+ * banco, repositório, cofre, importadores e export/import.
  *
  *   node scripts/smoke.js
  */
@@ -14,7 +14,7 @@ const path = require('node:path');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'tsm-smoke-'));
 process.env.TSM_DATA_DIR = tmp;
 
-// ---- duplo do modulo electron ---------------------------------------------
+// ---- duplo do módulo electron ---------------------------------------------
 const electronStub = {
   app: {
     getPath: () => tmp,
@@ -24,7 +24,7 @@ const electronStub = {
   },
   safeStorage: {
     isEncryptionAvailable: () => true,
-    // "Cifra" reversivel so para o teste; nao e o caminho de producao.
+    // "Cifra" reversível só para o teste; não é o caminho de produção.
     encryptString: (s) => Buffer.concat([Buffer.from('FAKE'), Buffer.from(s, 'utf8')]),
     decryptString: (b) => Buffer.from(b).subarray(4).toString('utf8')
   },
@@ -63,8 +63,8 @@ function check(label, fn) {
 }
 
 /**
- * Verificacoes assincronas. Como este arquivo e CommonJS (sem top-level await),
- * elas ficam numa fila e rodam no `finish()`, sob o cabecalho proprio.
+ * Verificações assíncronas. Como este arquivo é CommonJS (sem top-level await),
+ * elas ficam numa fila e rodam no `finish()`, sob o cabeçalho próprio.
  */
 const pending = [];
 const checkAsync = (section, label, fn) => pending.push({ section, label, fn });
@@ -91,10 +91,10 @@ async function runPending() {
 }
 
 const assert = (cond, msg) => {
-  if (!cond) throw new Error(msg || 'condicao falsa');
+  if (!cond) throw new Error(msg || 'condição falsa');
 };
 
-// ---- inicio ----------------------------------------------------------------
+// ---- início ----------------------------------------------------------------
 const db = require('../src/main/store/db');
 const repo = require('../src/main/store/repo');
 const vault = require('../src/main/security/vault');
@@ -105,35 +105,35 @@ const { BUILTIN_THEMES, DEFAULT_SETTINGS } = require('../src/shared/themes');
 const telnet = require('../src/main/transports/telnet');
 const shellTransport = require('../src/main/transports/shell');
 
-console.log(`\nTSM - teste de fumaca (dados em ${tmp})\n`);
+console.log(`\nTSM - teste de fumaça (dados em ${tmp})\n`);
 
 console.log('[banco]');
-check('abre e aplica todas as migracoes', () => {
+check('abre e aplica todas as migrações', () => {
   db.open();
   const v = db.get().pragma('user_version', { simple: true });
   assert(v >= 2, `user_version = ${v}`);
-  // As tabelas de todas as migracoes precisam existir.
+  // As tabelas de todas as migrações precisam existir.
   for (const t of ['folders', 'sessions', 'identities', 'secrets', 'settings',
                    'themes', 'known_hosts', 'connection_log', 'snippets']) {
     const row = db.get()
       .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
       .get(t);
-    assert(row, `tabela ${t} nao foi criada`);
+    assert(row, `tabela ${t} não foi criada`);
   }
 });
 check(`motor ativo: ${db.engine()}`, () => true);
 
-console.log('\n[pastas e sessoes]');
+console.log('\n[pastas e sessões]');
 let f1;
 let f2;
 let s1;
 check('cria pastas aninhadas', () => {
-  f1 = repo.folders.create({ name: 'Producao' });
+  f1 = repo.folders.create({ name: 'Produção' });
   f2 = repo.folders.create({ name: 'Bancos', parentId: f1.id });
   assert(repo.folders.list().length === 2);
   assert(repo.folders.find(f2.id).parent_id === f1.id);
 });
-check('impede ciclo ao mover pasta para dentro da propria subarvore', () => {
+check('impede ciclo ao mover pasta para dentro da própria subárvore', () => {
   try {
     repo.folders.update(f1.id, { parentId: f2.id });
     throw new Error('deveria ter recusado');
@@ -141,18 +141,18 @@ check('impede ciclo ao mover pasta para dentro da propria subarvore', () => {
     assert(/dentro dela mesma/.test(err.message), err.message);
   }
 });
-check('cria sessao com config JSON e etiquetas', () => {
+check('cria sessão com config JSON e etiquetas', () => {
   s1 = repo.sessions.create({
     name: 'db-master',
     type: 'ssh',
     folderId: f2.id,
     config: { host: '10.0.0.5', port: 22, username: 'root', compression: true },
-    tags: ['producao', 'postgres']
+    tags: ['produção', 'postgres']
   });
   assert(repo.sessions.find(s1.id).config.host === '10.0.0.5');
   assert(repo.sessions.find(s1.id).tags.length === 2);
 });
-check('sem limite de sessoes salvas (grava 500 numa transacao)', () => {
+check('sem limite de sessões salvas (grava 500 numa transação)', () => {
   const t0 = Date.now();
   repo.tx(() => {
     for (let i = 0; i < 500; i++) {
@@ -165,10 +165,10 @@ check('sem limite de sessoes salvas (grava 500 numa transacao)', () => {
   });
   const ms = Date.now() - t0;
   assert(repo.sessions.count() === 501, `contou ${repo.sessions.count()}`);
-  // Guarda-chuva contra regressao: sem transacao isso levava mais de um minuto.
-  assert(ms < 15000, `500 insercoes levaram ${ms} ms — a transacao deixou de ser aplicada?`);
+  // Guarda-chuva contra regressão: sem transação isso levava mais de um minuto.
+  assert(ms < 15000, `500 inserções levaram ${ms} ms — a transação deixou de ser aplicada?`);
 });
-check('busca por nome e por conteudo da config', () => {
+check('busca por nome e por conteúdo da config', () => {
   assert(repo.sessions.search('db-master').length === 1);
   assert(repo.sessions.search('10.1.0.').length > 1);
 });
@@ -189,7 +189,7 @@ check('descendentes por CTE recursiva', () => {
 });
 
 console.log('\n[cofre de credenciais]');
-check('grava e le segredo pelo cofre do SO', () => {
+check('grava e lê segredo pelo cofre do SO', () => {
   vault.write('session', s1.id, 'password', 'senha-super-secreta');
   assert(vault.has('session', s1.id, 'password'));
   assert(vault.read('session', s1.id, 'password') === 'senha-super-secreta');
@@ -232,13 +232,13 @@ check('envelope de export exige a senha correta', () => {
   assert(!abriu, 'abriu com a senha errada');
 });
 
-console.log('\n[temas e preferencias]');
+console.log('\n[temas e preferências]');
 check('semeia os temas embutidos', () => {
   for (const t of BUILTIN_THEMES) repo.themes.upsert({ ...t, builtin: true });
   assert(repo.themes.list().length === BUILTIN_THEMES.length);
   assert(repo.themes.find('dracula').data.background === '#282a36');
 });
-check('preferencias guardam JSON estruturado', () => {
+check('preferências guardam JSON estruturado', () => {
   repo.settings.merge(DEFAULT_SETTINGS);
   assert(repo.settings.get('terminal.fontSize') === 14);
   repo.settings.set('window.bounds', { x: 10, y: 20, width: 800, height: 600 });
@@ -248,7 +248,7 @@ check('preferencias guardam JSON estruturado', () => {
 console.log('\n[biblioteca de comandos]');
 check('cria, lista, edita e remove snippet', () => {
   const snip = repo.snippets.create({
-    name: 'Uso de disco', content: 'df -h', category: 'Diagnostico'
+    name: 'Uso de disco', content: 'df -h', category: 'Diagnóstico'
   });
   assert(repo.snippets.list().length === 1);
   assert(repo.snippets.find(snip.id).run === true);
@@ -259,21 +259,21 @@ check('cria, lista, edita e remove snippet', () => {
   assert(repo.snippets.list().length === 0);
 });
 
-console.log('\n[gravacao de sessao]');
+console.log('\n[gravação de sessão]');
 const logger = require('../src/main/logger');
-checkAsync('gravacao de sessao', 'grava a saida removendo as cores ANSI', async () => {
+checkAsync('gravação de sessão', 'grava a saida removendo as cores ANSI', async () => {
   const ESC = String.fromCharCode(27);
   const BEL = String.fromCharCode(7);
   const EOL = String.fromCharCode(13, 10);
-  const file = path.join(tmp, 'sessao.log');
+  const file = path.join(tmp, 'sessão.log');
   logger.start('conn-teste', { template: file, meta: { name: 'teste' }, stripAnsi: true });
   logger.write('conn-teste', ESC + '[31mERRO' + ESC + '[0m ao conectar' + EOL);
   logger.write('conn-teste', ESC + ']0;titulo' + BEL + 'segunda linha' + EOL);
-  // `stop` so resolve depois do flush; ler antes disso daria ENOENT.
+  // `stop` só resolve depois do flush; ler antes disso daria ENOENT.
   const st = await logger.stop('conn-teste');
   assert(st && st.filePath === file, JSON.stringify(st));
   const out = fs.readFileSync(file, 'utf8');
-  assert(!out.includes(ESC), 'sobrou sequencia ANSI no log');
+  assert(!out.includes(ESC), 'sobrou sequência ANSI no log');
   assert(out.includes('ERRO ao conectar'), out);
   assert(out.includes('segunda linha'), out);
 });
@@ -291,21 +291,21 @@ check('gera par ed25519 no formato OpenSSH', () => {
   assert(/^SHA256:/.test(pair.fingerprint), pair.fingerprint);
   assert(pair.encrypted === false);
 });
-check('grava o par e le de volta', () => {
+check('grava o par e lê de volta', () => {
   const pair = keygen.generate({ type: 'ed25519', comment: 'teste' });
   const saved = keygen.save(pair, { dir: path.join(tmp, 'keys'), name: 'id_teste' });
   assert(fs.existsSync(saved.privatePath) && fs.existsSync(saved.publicPath));
   const info = keygen.inspect(saved.privatePath);
   assert(info.fingerprint === pair.fingerprint, `${info.fingerprint} != ${pair.fingerprint}`);
-  // Nao sobrescreve chave existente sem avisar.
+  // Não sobrescreve chave existente sem avisar.
   let sobrescreveu = false;
   try {
     keygen.save(pair, { dir: path.join(tmp, 'keys'), name: 'id_teste' });
     sobrescreveu = true;
   } catch { /* esperado */ }
-  assert(!sobrescreveu, 'sobrescreveu uma chave que ja existia');
+  assert(!sobrescreveu, 'sobrescreveu uma chave que já existia');
 });
-check('chave com senha nao abre sem a senha', () => {
+check('chave com senha não abre sem a senha', () => {
   const pair = keygen.generate({ type: 'rsa', bits: 2048, passphrase: 'segredo123' });
   assert(pair.encrypted === true);
   const saved = keygen.save(pair, { dir: path.join(tmp, 'keys'), name: 'id_rsa_teste' });
@@ -315,8 +315,8 @@ check('chave com senha nao abre sem a senha', () => {
   assert(comSenha.type === 'ssh-rsa', comSenha.type);
 });
 
-console.log('\n[modo portatil]');
-check('os dados ficam na pasta apontada, nao no perfil do usuario', () => {
+console.log('\n[modo portátil]');
+check('os dados ficam na pasta apontada, não no perfil do usuário', () => {
   const paths = require('../src/main/paths');
   assert(paths.dataDir() === tmp, `${paths.dataDir()} != ${tmp}`);
   assert(path.dirname(db.getPath()) === tmp, db.getPath());
@@ -332,12 +332,12 @@ const MOBA_LINES = [
   'gateway-borda= #109#0%bastion.exemplo.com%22%admin%%-1%-1%%%%%0%0%0%%%-1%0%0%0#MobaFont%10#0# #-1',
   '',
   '[Bookmarks_1]',
-  'SubRep=Producao\\Bancos',
+  'SubRep=Produção\\Bancos',
   'ImgNum=41',
-  'pg-primario= #109#0%10.20.30.40%2222%postgres%1%1%_ProfileDir_\\.ssh\\id_ed25519%%%%0#MobaFont%10#0# #-1',
+  'pg-primário= #109#0%10.20.30.40%2222%postgres%1%1%_ProfileDir_\\.ssh\\id_ed25519%%%%0#MobaFont%10#0# #-1',
   'switch-core= #98#1%192.168.1.1%23%admin%%-1%-1%%%%%0#MobaFont%10#0# #-1',
-  'area-de-trabalho= #91#4%10.0.0.9%3389%usuario%%%%%0#MobaFont%10#0# #-1',
-  'linha-quebrada=isto nao e um bookmark',
+  'rdp-matriz= #91#4%10.0.0.9%3389%operador%%%%%0#MobaFont%10#0# #-1',
+  'linha-quebrada=isto não é um bookmark',
   '',
   '[Colors]',
   'ForegroundColour=236,236,236',
@@ -349,59 +349,59 @@ const MOBA_LINES = [
 const MOBA_INI = MOBA_LINES.join('\r\n');
 
 let parsed;
-check('faz parse das secoes e monta a hierarquia de pastas', () => {
+check('faz parse das seções e monta a hierarquia de pastas', () => {
   parsed = moba.parse(Buffer.from(MOBA_INI, 'latin1'));
   const paths = parsed.folders.map((f) => f.path).sort();
-  assert(paths.includes('Producao') && paths.includes('Producao/Bancos'), JSON.stringify(paths));
+  assert(paths.includes('Produção') && paths.includes('Produção/Bancos'), JSON.stringify(paths));
 });
-check('mapeia SSH com porta, usuario e caminho de chave', () => {
-  const pg = parsed.sessions.find((s) => s.name === 'pg-primario');
-  assert(pg, 'sessao pg-primario nao encontrada');
+check('mapeia SSH com porta, usuário e caminho de chave', () => {
+  const pg = parsed.sessions.find((s) => s.name === 'pg-primário');
+  assert(pg, 'sessão pg-primário não encontrada');
   assert(pg.type === 'ssh', pg.type);
   assert(pg.config.host === '10.20.30.40', pg.config.host);
   assert(pg.config.port === 2222, String(pg.config.port));
   assert(pg.config.username === 'postgres', pg.config.username);
   assert(pg.config.privateKeyPath === '~/.ssh/id_ed25519', pg.config.privateKeyPath);
-  assert(pg.config.x11Forward === true && pg.config.compression === true, 'flags nao mapeadas');
-  assert(pg.folderPath === 'Producao/Bancos', pg.folderPath);
-  assert(typeof pg.config.raw === 'string' && pg.config.raw.length > 10, 'linha original nao preservada');
+  assert(pg.config.x11Forward === true && pg.config.compression === true, 'flags não mapeadas');
+  assert(pg.folderPath === 'Produção/Bancos', pg.folderPath);
+  assert(typeof pg.config.raw === 'string' && pg.config.raw.length > 10, 'linha original não preservada');
 });
-check('mapeia Telnet (codigo de tipo 1)', () => {
+check('mapeia Telnet (código de tipo 1)', () => {
   const sw = parsed.sessions.find((s) => s.name === 'switch-core');
   assert(sw && sw.type === 'telnet', sw && sw.type);
   assert(sw.config.host === '192.168.1.1' && sw.config.port === 23);
 });
-check('relata tipo nao suportado (RDP) em vez de descartar em silencio', () => {
-  assert(!parsed.sessions.some((s) => s.name === 'area-de-trabalho'), 'RDP nao deveria ser importado');
+check('relata tipo não suportado (RDP) em vez de descartar em silêncio', () => {
+  assert(!parsed.sessions.some((s) => s.name === 'rdp-matriz'), 'RDP não deveria ser importado');
   assert(
-    parsed.warnings.some((w) => /area-de-trabalho/.test(w) && /rdp/i.test(w)),
+    parsed.warnings.some((w) => w.includes('rdp-matriz') && /rdp/i.test(w)),
     JSON.stringify(parsed.warnings)
   );
 });
 check('relata linha malformada', () => {
   assert(parsed.warnings.some((w) => /linha-quebrada/.test(w)), JSON.stringify(parsed.warnings));
 });
-check('converte a secao [Colors] de RGB para hex', () => {
+check('converte a seção [Colors] de RGB para hex', () => {
   assert(parsed.theme.background === '#1e1e1e', parsed.theme.background);
   assert(parsed.theme.foreground === '#ececec', parsed.theme.foreground);
   assert(parsed.theme.red === '#bb0000', parsed.theme.red);
   assert(parsed.theme.brightGreen === '#55ff55', parsed.theme.brightGreen);
 });
-check('aplica ao banco criando pastas e sessoes', () => {
+check('aplica ao banco criando pastas e sessões', () => {
   const before = repo.sessions.count();
   const stats = portability.applyParsed(parsed, { strategy: 'merge' });
   assert(stats.sessions === 3, `criou ${stats.sessions}`);
   assert(repo.sessions.count() === before + 3);
-  const pg = repo.sessions.list().find((s) => s.name === 'pg-primario');
+  const pg = repo.sessions.list().find((s) => s.name === 'pg-primário');
   assert(repo.folders.find(pg.folder_id).name === 'Bancos');
 });
-check('reimportar o mesmo arquivo nao duplica', () => {
+check('reimportar o mesmo arquivo não duplica', () => {
   const stats = portability.applyParsed(parsed, { strategy: 'merge' });
   assert(stats.sessions === 0 && stats.skipped === 3, JSON.stringify(stats));
 });
 
 console.log('\n[importador PuTTY]');
-check('le .reg com nome percent-encoded, dword e port forwarding', () => {
+check('lê .reg com nome percent-encoded, dword e port forwarding', () => {
   const reg = [
     'Windows Registry Editor Version 5.00',
     '',
@@ -425,7 +425,7 @@ check('le .reg com nome percent-encoded, dword e port forwarding', () => {
 });
 
 console.log('\n[export / import nativo]');
-check('export sem credenciais nao vaza senha', () => {
+check('export sem credenciais não vaza senha', () => {
   const payload = portability.buildExport({ includeSecrets: false });
   assert(payload.format === 'tsm-export' && payload.encrypted === false);
   assert(payload.sessions.length === repo.sessions.count());
@@ -458,7 +458,7 @@ check('import recusa senha errada', () => {
   }
   assert(!importou, 'importou com a senha errada');
 });
-check('previa nao grava nada no banco', () => {
+check('prévia não grava nada no banco', () => {
   const before = repo.sessions.count();
   const p = portability.previewFile(path.join(tmp, 'export.tsm.json'));
   assert(p.encrypted === true && p.sessions.length > 0);
@@ -474,7 +474,7 @@ const SE = 240;
 const TTYPE = 24;
 const ECHO = 1;
 
-check('negocia opcoes e separa texto dos comandos IAC', () => {
+check('negocia opções e separa texto dos comandos IAC', () => {
   const conn = new telnet.TelnetConnection({ host: 'x', port: 23 }, {});
   const sent = [];
   conn.socket = { write: (b) => sent.push(Buffer.from(b)), destroyed: false };
@@ -486,9 +486,9 @@ check('negocia opcoes e separa texto dos comandos IAC', () => {
   assert(text === 'login: ', JSON.stringify(text));
 
   const all = Buffer.concat(sent);
-  assert(all.includes(Buffer.from([IAC, WILL, TTYPE])), 'nao respondeu WILL TERMINAL-TYPE');
-  assert(all.includes(Buffer.from([IAC, DO, ECHO])), 'nao respondeu DO ECHO');
-  assert(all.includes(Buffer.from('xterm-256color', 'ascii')), 'nao enviou o terminal-type');
+  assert(all.includes(Buffer.from([IAC, WILL, TTYPE])), 'não respondeu WILL TERMINAL-TYPE');
+  assert(all.includes(Buffer.from([IAC, DO, ECHO])), 'não respondeu DO ECHO');
+  assert(all.includes(Buffer.from('xterm-256color', 'ascii')), 'não enviou o terminal-type');
 });
 check('trata comando IAC partido entre dois chunks', () => {
   const conn = new telnet.TelnetConnection({ host: 'x' }, {});
@@ -520,7 +520,7 @@ check(
 checkAsync('backup', 'gera copia do banco', async () => {
   const dest = path.join(tmp, 'backup.db');
   await db.get().backup(dest);
-  assert(fs.existsSync(dest), 'arquivo de backup nao foi criado');
+  assert(fs.existsSync(dest), 'arquivo de backup não foi criado');
   assert(fs.statSync(dest).size > 0, 'backup vazio');
 });
 

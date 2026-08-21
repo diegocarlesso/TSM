@@ -1,16 +1,16 @@
 'use strict';
 /**
- * Shell local. Usa node-pty quando disponivel (indispensavel para vim, htop,
- * menuconfig...). Se o modulo nativo nao carregar — build sem rebuild, distro
- * exotica —, cai para pipes via child_process: perde o PTY, mas o app abre.
+ * Shell local. Usa node-pty quando disponível (indispensável para vim, htop,
+ * menuconfig...). Se o módulo nativo não carregar — build sem rebuild, distro
+ * exótica —, cai para pipes via child_process: perde o PTY, mas o app abre.
  */
 const os = require('node:os');
 const fs = require('node:fs');
 const { EventEmitter } = require('node:events');
 
-// `@lydell/node-pty` distribui binarios Node-API prontos por plataforma, entao
-// instala sem node-gyp/Visual Studio. `node-pty` fica como segunda opcao para
-// quem ja tiver o modulo classico compilado.
+// `@lydell/node-pty` distribui binários Node-API prontos por plataforma, então
+// instala sem node-gyp/Visual Studio. `node-pty` fica como segunda opção para
+// quem já tiver o módulo classico compilado.
 let pty = null;
 let ptyError = null;
 for (const candidate of ['@lydell/node-pty', 'node-pty']) {
@@ -29,7 +29,7 @@ function firstExisting(candidates) {
   return null;
 }
 
-/** Shells que fazem sentido oferecer na maquina atual. */
+/** Shells que fazem sentido oferecer na máquina atual. */
 function detectShells() {
   const out = [];
   if (process.platform === 'win32') {
@@ -63,7 +63,7 @@ function detectShells() {
     }
     if (process.env.SHELL && !out.some((s) => s.path === process.env.SHELL)) {
       out.unshift({
-        id: process.env.SHELL, label: `${process.env.SHELL.split('/').pop()} (padrao)`,
+        id: process.env.SHELL, label: `${process.env.SHELL.split('/').pop()} (padrão)`,
         path: process.env.SHELL, args: ['-l']
       });
     }
@@ -97,7 +97,7 @@ class ShellConnection extends EventEmitter {
 
     const cwd = cfg.cwd && fs.existsSync(cfg.cwd) ? cfg.cwd : os.homedir();
     const env = { ...process.env, ...(cfg.env || {}), TERM: cfg.terminalType || 'xterm-256color' };
-    // Variaveis do Electron atrapalham processos filhos.
+    // Variáveis do Electron atrapalham processos filhos.
     delete env.ELECTRON_RUN_AS_NODE;
 
     if (pty) {
@@ -130,8 +130,8 @@ class ShellConnection extends EventEmitter {
       });
       this.proc.on('error', (err) => this.emit('error', err));
       this.emit('data',
-        `\x1b[33m[TSM] node-pty indisponivel (${ptyError && ptyError.message}); ` +
-        `modo pipe: aplicacoes de tela cheia nao funcionarao.\x1b[0m\r\n`);
+        `\x1b[33m[TSM] node-pty indisponível (${ptyError && ptyError.message}); ` +
+        `modo pipe: aplicações de tela cheia não funcionarao.\x1b[0m\r\n`);
     }
 
     this.emit('ready');
@@ -148,7 +148,7 @@ class ShellConnection extends EventEmitter {
 
   resize(cols, rows) {
     if (this.proc && this.usingPty) {
-      try { this.proc.resize(cols, rows); } catch { /* processo ja saiu */ }
+      try { this.proc.resize(cols, rows); } catch { /* processo já saiu */ }
     }
   }
 
@@ -158,7 +158,7 @@ class ShellConnection extends EventEmitter {
     try {
       if (this.usingPty) this.proc.kill();
       else this.proc.kill('SIGHUP');
-    } catch { /* ja morto */ }
+    } catch { /* já morto */ }
   }
 }
 

@@ -1,6 +1,6 @@
 /**
  * Roteiro que deixa a interface num estado representativo para a captura:
- * algumas sessoes na arvore e uma aba dividida em tres paineis.
+ * algumas sessões na árvore e uma aba dividida em três painéis.
  *
  *   TSM_UITEST=scripts/uitest-shot.js TSM_SHOT=tela.png TSM_SMOKE=1 npx electron .
  *
@@ -28,9 +28,9 @@
   }));
 
   try {
-    // A arvore ja vem semeada por scripts/seed-demo.js — recarregar a pagina
+    // A árvore já vem semeada por scripts/seed-demo.js — recarregar a página
     // aqui mataria a promise que o processo principal esta aguardando.
-    await waitFor(() => $$('#tree .node').length > 3, 'arvore povoada');
+    await waitFor(() => $$('#tree .node').length > 3, 'árvore povoada');
 
     // Abre as pastas para a captura mostrar a hierarquia.
     for (const node of $$('#tree .node.folder')) {
@@ -39,7 +39,7 @@
     }
     await sleep(300);
 
-    // --- uma aba dividida em tres paineis --------------------------------
+    // --- uma aba dividida em três painéis --------------------------------
     $('#welcome [data-action="shell"]').click();
     const menu = await waitFor(() => $('.context-menu'), 'menu de shells');
     menu.querySelector('.item').click();
@@ -53,11 +53,11 @@
     key('ArrowDown', { ctrl: true, shift: true });
     await waitFor(() => $$('.tab-view.active .leaf').length === 3, 'terceiro painel');
 
-    // Deixa os shells imprimirem alguma coisa, senao a captura fica vazia.
+    // Deixa os shells imprimirem alguma coisa, senão a captura fica vazia.
     await sleep(2200);
 
-    log.push(`  ok    estado montado: ${$$('#tree .node').length} nos na arvore, ` +
-             `${$$('.tab-view.active .leaf').length} paineis na aba`);
+    log.push(`  ok    estado montado: ${$$('#tree .node').length} nos na árvore, ` +
+             `${$$('.tab-view.active .leaf').length} painéis na aba`);
     return { ok: true, log };
   } catch (err) {
     log.push(`  FALHA ao montar o estado: ${err.message}`);

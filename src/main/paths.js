@@ -2,17 +2,17 @@
 /**
  * Onde o TSM guarda os dados.
  *
- * O app e PORTATIL: por padrao o banco, os logs e as chaves ficam numa pasta
- * `data/` ao lado do executavel, entao copiar a pasta (ou o pendrive) leva
- * tudo junto. So caimos no perfil do usuario quando a pasta do executavel e
- * somente leitura — instalacao em `Program Files`, `.app` dentro de `/Applications`,
+ * O app é PORTÁTIL: por padrão o banco, os logs e as chaves ficam numa pasta
+ * `data/` ao lado do executável, então copiar a pasta (ou o pendrive) leva
+ * tudo junto. So caímos no perfil do usuário quando a pasta do executável e
+ * somente leitura — instalação em `Program Files`, `.app` dentro de `/Applications`,
  * AppImage montado em um sistema de arquivos read-only.
  *
- * Ordem de resolucao:
- *   1. `TSM_DATA_DIR` — controle explicito do usuario;
- *   2. `PORTABLE_EXECUTABLE_DIR` — definida pelo .exe portatil (que roda a partir
- *      de um diretorio temporario, entao `process.execPath` nao serve);
- *   3. `<pasta do executavel>/data`, se der para escrever;
+ * Ordem de resolução:
+ *   1. `TSM_DATA_DIR` — controle explicito do usuário;
+ *   2. `PORTABLE_EXECUTABLE_DIR` — definida pelo .exe portátil (que roda a partir
+ *      de um diretório temporário, então `process.execPath` não serve);
+ *   3. `<pasta do executável>/data`, se der para escrever;
  *   4. `userData` do sistema.
  */
 const fs = require('node:fs');
@@ -21,13 +21,13 @@ const { app } = require('electron');
 
 let cached = null;
 
-/** Pasta que o usuario enxerga como "onde o programa esta". */
+/** Pasta que o usuário enxerga como "onde o programa esta". */
 function appDir() {
-  // O .exe portatil se auto-extrai num temp; esta variavel aponta o lugar real.
+  // O .exe portátil se auto-extrai num temp; esta variável aponta o lugar real.
   if (process.env.PORTABLE_EXECUTABLE_DIR) return process.env.PORTABLE_EXECUTABLE_DIR;
 
   if (!app.isPackaged) {
-    // Em desenvolvimento `process.execPath` e o electron de node_modules.
+    // Em desenvolvimento `process.execPath` é o electron de node_modules.
     return path.resolve(__dirname, '../..');
   }
 
@@ -71,7 +71,7 @@ function dataDir() {
   return cached;
 }
 
-/** True quando os dados estao mesmo ao lado do executavel. */
+/** True quando os dados estão mesmo ao lado do executável. */
 function isPortable() {
   return dataDir().startsWith(appDir());
 }

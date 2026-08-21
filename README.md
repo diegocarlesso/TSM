@@ -20,6 +20,10 @@ reutiliza, modifica nem contorna nada do produto da Mobatek.
   automaticamente na conexão.
 - **Telnet** com negociação real de opções (ECHO, SGA, NAWS, TERMINAL-TYPE, BINARY) e
   auto-login opcional por regex de prompt — funciona com switches, OLTs e equipamentos legados.
+- **Serial (COM/tty)** com baud, bits de dados, paridade, bits de parada, controle de fluxo
+  por hardware ou software, escolha do que a tecla Enter envia (CR, LF ou CR+LF), eco local
+  opcional e sinal de **break**. As portas são detectadas na máquina e a lista é
+  atualizável sem fechar o editor.
 - **Shell local** com PTY de verdade (`node-pty`): PowerShell 7, Windows PowerShell, cmd,
   Git Bash, WSL, bash/zsh. Cai para modo pipe se o módulo nativo não estiver disponível.
 - **Algoritmos legados** opcionais por sessão, para equipamentos antigos que ainda falam
@@ -131,6 +135,20 @@ npm run dist:linux
 ```bash
 npm run dist:mac
 ```
+
+> `dist:mac` e `dist:linux` **só funcionam rodando no próprio sistema**: o `.icns`, o `.dmg`
+> e o AppImage dependem de ferramentas que não existem no Windows. Para gerar os três a
+> partir de qualquer máquina, use o fluxo de CI:
+>
+> ```bash
+> gh workflow run "Build portátil"
+> ```
+>
+> Ele compila Windows, Linux e macOS em paralelo nos runners do GitHub e publica os
+> artefatos. Empurrar uma tag `vX.Y.Z` faz o mesmo e ainda anexa tudo ao release.
+>
+> Os binários de macOS saem **sem assinatura** (não há certificado de desenvolvedor no
+> projeto): na primeira abertura, use botão direito → Abrir.
 
 O que sai em `dist/`:
 
@@ -263,6 +281,12 @@ TSM_SMOKE=1 TSM_UITEST=scripts/uitest-split.js npx electron .
 22 verificações na interface de verdade — abre a janela e dirige tudo por clique e teclado
 (nenhuma porta de teste no código de produção): identidade visual, split, divisórias
 arrastáveis, navegação entre painéis e fechamento.
+
+```bash
+TSM_SMOKE=1 TSM_UITEST=scripts/uitest-config.js npx electron .
+```
+
+Mais 13 verificações sobre a prévia de personalização e o editor de sessão serial.
 
 Para gerar um banco de demonstração e uma captura de tela:
 

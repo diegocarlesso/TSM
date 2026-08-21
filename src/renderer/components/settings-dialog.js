@@ -1,5 +1,5 @@
 'use strict';
-/** Configuracoes, aparencia, credenciais, import/export e janelas auxiliares. */
+/** Configurações, aparência, credenciais, import/export e janelas auxiliares. */
 import { el, modal, toast, guard, checkbox, select, confirmDialog, promptDialog, formatDate, formatBytes } from './ui.js';
 import {
   state, reloadSettings, reloadThemes, reloadVault, reloadIdentities, reloadTree, setting
@@ -18,7 +18,7 @@ const RIGHT_CLICK = [
 ];
 
 // ------------------------------------------------------------ settings ----
-export async function settingsDialog(initialTab = 'aparencia') {
+export async function settingsDialog(initialTab = 'aparência') {
   let tab = initialTab;
   const body = el('div');
   const draft = { ...state.settings };
@@ -40,8 +40,8 @@ export async function settingsDialog(initialTab = 'aparencia') {
   }
 
   /**
-   * Reaplica tipografia e cores nas previas ja montadas, sem reconstruir o
-   * painel: se remontassemos, o campo que o usuario esta digitando perderia o
+   * Reaplica tipografia e cores nas prévias já montadas, sem reconstruir o
+   * painel: se remontassemos, o campo que o usuário esta digitando perderia o
    * foco a cada tecla.
    */
   function atualizarPrevias() {
@@ -60,8 +60,8 @@ export async function settingsDialog(initialTab = 'aparencia') {
   function strip() {
     const node = el('div', { class: 'tabs-strip' });
     for (const [key, label] of [
-      ['aparencia', 'Aparencia'], ['terminal', 'Terminal'],
-      ['conexao', 'Conexao'], ['seguranca', 'Seguranca'], ['dados', 'Dados']
+      ['aparência', 'Aparência'], ['terminal', 'Terminal'],
+      ['conexão', 'Conexão'], ['segurança', 'Segurança'], ['dados', 'Dados']
     ]) {
       node.append(el('button', {
         class: tab === key ? 'active' : '', text: label,
@@ -79,7 +79,7 @@ export async function settingsDialog(initialTab = 'aparencia') {
     };
     const full = (n) => grid.append(el('div', { class: 'full' }, [n]));
 
-    if (tab === 'aparencia') {
+    if (tab === 'aparência') {
       add('Tema da janela', select(
         state.uiThemes.map((t) => ({ value: t.id, label: t.name })),
         draft['ui.theme'] || 'dark',
@@ -93,8 +93,8 @@ export async function settingsDialog(initialTab = 'aparencia') {
         select(
           state.themes.map((t) => ({ value: t.id, label: t.name })),
           draft['terminal.theme'] || 'tsm-dark',
-          // `commit` sozinho nao redesenhava a previa: ela era montada uma vez,
-          // na renderizacao do painel, e ficava mostrando o tema anterior.
+          // `commit` sozinho não redesenhava a prévia: ela era montada uma vez,
+          // na renderização do painel, e ficava mostrando o tema anterior.
           async (v) => { await commit('terminal.theme', v); rerender(); }
         ),
         el('button', { text: 'Editar temas…', onClick: () => themeEditor().then(rerender) })
@@ -106,7 +106,7 @@ export async function settingsDialog(initialTab = 'aparencia') {
       add('Fonte', el('input', {
         type: 'text', value: draft['terminal.fontFamily'],
         onInput: (e) => commit('terminal.fontFamily', e.target.value)
-      }), 'Lista CSS: a primeira fonte instalada e usada.');
+      }), 'Lista CSS: a primeira fonte instalada é usada.');
       add('Tamanho', el('input', {
         type: 'number', value: draft['terminal.fontSize'], min: '6', max: '40',
         onInput: (e) => commit('terminal.fontSize', Number(e.target.value))
@@ -115,45 +115,45 @@ export async function settingsDialog(initialTab = 'aparencia') {
         type: 'number', step: '0.05', value: draft['terminal.lineHeight'],
         onInput: (e) => commit('terminal.lineHeight', Number(e.target.value))
       }));
-      add('Espacamento', el('input', {
+      add('Espaçamento', el('input', {
         type: 'number', step: '0.1', value: draft['terminal.letterSpacing'],
         onInput: (e) => commit('terminal.letterSpacing', Number(e.target.value))
       }));
       add('Cursor', select(CURSOR_STYLES, draft['terminal.cursorStyle'], (v) => commit('terminal.cursorStyle', v)));
       full(checkbox('Cursor piscante', draft['terminal.cursorBlink'], (v) => commit('terminal.cursorBlink', v)));
-      add('Historico (linhas)', el('input', {
+      add('Histórico (linhas)', el('input', {
         type: 'number', value: draft['terminal.scrollback'], min: '100', step: '1000',
         onInput: (e) => commit('terminal.scrollback', Number(e.target.value))
-      }), 'Quantas linhas ficam disponiveis para rolar. 100000 é confortável e barato em memória.');
-      add('Botao direito', select(RIGHT_CLICK, draft['terminal.rightClick'], (v) => commit('terminal.rightClick', v)));
+      }), 'Quantas linhas ficam disponíveis para rolar. 100000 é confortável e barato em memória.');
+      add('Botão direito', select(RIGHT_CLICK, draft['terminal.rightClick'], (v) => commit('terminal.rightClick', v)));
       full(checkbox('Copiar ao selecionar', draft['terminal.copyOnSelect'], (v) => commit('terminal.copyOnSelect', v)));
       add('Separadores de palavra', el('input', {
         type: 'text', value: draft['terminal.wordSeparators'],
         onInput: (e) => commit('terminal.wordSeparators', e.target.value)
       }), 'Usados no duplo clique.');
-      // A mesma previa aparece aqui, ja que esta aba mexe em fonte e tamanho.
+      // A mesma prévia aparece aqui, já que esta aba mexe em fonte e tamanho.
       full(themePreview(draft['terminal.theme'], draft));
     }
 
-    if (tab === 'conexao') {
+    if (tab === 'conexão') {
       full(checkbox('Confirmar antes de fechar uma aba conectada',
         draft['connection.confirmClose'], (v) => commit('connection.confirmClose', v)));
-      full(checkbox('Reconectar automaticamente quando a conexao cair',
+      full(checkbox('Reconectar automaticamente quando a conexão cair',
         draft['connection.reconnectOnDrop'], (v) => commit('connection.reconnectOnDrop', v)));
       grid.append(el('div', { class: 'full' }, [el('hr', { style: 'border-color:var(--border)' })]));
       full(el('button', { text: 'Chaves de host conhecidas…', onClick: () => knownHostsDialog() }));
-      full(el('button', { text: 'Historico de conexoes…', onClick: () => historyDialog() }));
+      full(el('button', { text: 'Histórico de conexões…', onClick: () => historyDialog() }));
     }
 
-    if (tab === 'seguranca') {
+    if (tab === 'segurança') {
       const v = state.vault;
       grid.append(el('div', { class: 'full muted' }, [
         el('p', {
           text: v.masterEnabled
-            ? 'As credenciais estao cifradas com a sua senha mestra (AES-256-GCM + scrypt).'
+            ? 'As credenciais estão cifradas com a sua senha mestra (AES-256-GCM + scrypt).'
             : v.scheme === 'safeStorage'
-              ? 'As credenciais estao cifradas pelo cofre do sistema operacional (DPAPI/Keychain/libsecret).'
-              : 'ATENCAO: o sistema nao oferece cofre e nao ha senha mestra — nao e possivel salvar senhas.'
+              ? 'As credenciais estão cifradas pelo cofre do sistema operacional (DPAPI/Keychain/libsecret).'
+              : 'ATENÇÃO: o sistema não oferece cofre e não há senha mestra — não é possível salvar senhas.'
         })
       ]));
 
@@ -178,8 +178,8 @@ export async function settingsDialog(initialTab = 'aparencia') {
       add('Banco de dados', el('code', {
         text: state.info ? state.info.dbPath : '', style: 'user-select:text;font-size:11px;word-break:break-all'
       }));
-      full(el('button', { text: 'Exportar sessoes…', onClick: () => exportDialog() }));
-      full(el('button', { text: 'Importar sessoes…', onClick: () => importDialog() }));
+      full(el('button', { text: 'Exportar sessões…', onClick: () => exportDialog() }));
+      full(el('button', { text: 'Importar sessões…', onClick: () => importDialog() }));
       full(el('button', {
         text: 'Backup do banco (.db)…',
         onClick: () => guard(async () => {
@@ -204,7 +204,7 @@ export async function settingsDialog(initialTab = 'aparencia') {
 
   rerender();
   await modal({
-    title: 'Configuracoes',
+    title: 'Configurações',
     width: 640,
     render: () => body,
     footer: (api) => [el('button', { class: 'primary', text: 'Fechar', onClick: () => api.close(true) })]
@@ -213,13 +213,13 @@ export async function settingsDialog(initialTab = 'aparencia') {
 }
 
 /**
- * Previa do tema do terminal. Recebe as preferencias em uso para que fonte,
- * tamanho e altura de linha aparecam do jeito que ficarao de verdade — senao a
- * previa mostra as cores certas com a tipografia errada.
+ * Prévia do tema do terminal. Recebe as preferências em uso para que fonte,
+ * tamanho e altura de linha aparecam do jeito que ficarao de verdade — senão a
+ * prévia mostra as cores certas com a tipografia errada.
  */
 function themePreview(themeId, prefs = {}) {
   const t = state.themes.find((x) => x.id === themeId) || state.themes[0];
-  if (!t) return el('div', { class: 'muted', text: 'Nenhum tema disponivel.' });
+  if (!t) return el('div', { class: 'muted', text: 'Nenhum tema disponível.' });
 
   const d = t.data;
   const line = (color, text) => `<span style="color:${color}">${text}</span>`;
@@ -233,7 +233,7 @@ function themePreview(themeId, prefs = {}) {
     style: `background:${d.background};color:${d.foreground};font-family:${fonte};`
       + `font-size:${tamanho}px;line-height:${altura}`,
     html: [
-      `${line(d.green, 'usuario@servidor')}:${line(d.blue, '~/projetos')}$ ls -la`,
+      `${line(d.green, 'usuário@servidor')}:${line(d.blue, '~/projetos')}$ ls -la`,
       `${line(d.brightBlue, 'drwxr-xr-x')}  4 root root  4096 ${line(d.cyan, 'config/')}`,
       `${line(d.foreground, '-rw-r--r--')}  1 root root 12043 ${line(d.foreground, 'app.log')}`,
       `${line(d.red, 'erro:')} falha ao conectar  ${line(d.yellow, 'aviso:')} tentando de novo`,
@@ -260,7 +260,7 @@ export async function themeEditor() {
 
   const KEYS = [
     ['background', 'Fundo'], ['foreground', 'Texto'], ['cursor', 'Cursor'],
-    ['selectionBackground', 'Selecao'],
+    ['selectionBackground', 'Seleção'],
     ['black', 'Preto'], ['red', 'Vermelho'], ['green', 'Verde'], ['yellow', 'Amarelo'],
     ['blue', 'Azul'], ['magenta', 'Magenta'], ['cyan', 'Ciano'], ['white', 'Branco'],
     ['brightBlack', 'Preto+'], ['brightRed', 'Vermelho+'], ['brightGreen', 'Verde+'],
@@ -297,9 +297,9 @@ export async function themeEditor() {
       preview.style.color = draft.foreground;
       preview.innerHTML = [
         `<span style="color:${draft.green}">deploy@prod</span>:<span style="color:${draft.blue}">/var/log</span>$ tail -f app.log`,
-        `<span style="color:${draft.cyan}">INFO</span>  servico iniciado na porta 8080`,
-        `<span style="color:${draft.yellow}">WARN</span>  latencia acima do normal`,
-        `<span style="color:${draft.red}">ERROR</span> conexao recusada`,
+        `<span style="color:${draft.cyan}">INFO</span>  serviço iniciado na porta 8080`,
+        `<span style="color:${draft.yellow}">WARN</span>  latência acima do normal`,
+        `<span style="color:${draft.red}">ERROR</span> conexão recusada`,
         `<span style="color:${draft.brightMagenta}">DEBUG</span> pool=12 idle=3`
       ].join('\n');
     };
@@ -338,7 +338,7 @@ export async function themeEditor() {
 
   await guard(async () => {
     if (action === 'delete') {
-      if (current.builtin) return toast('Temas embutidos nao podem ser excluidos', 'warn');
+      if (current.builtin) return toast('Temas embutidos não podem ser excluidos', 'warn');
       const ok = await confirmDialog({ title: 'Excluir tema', message: `Excluir "${current.name}"?`, danger: true });
       if (!ok) return;
       await window.tsm.themes.remove(current.id);
@@ -380,7 +380,7 @@ async function masterPasswordDialog(disable) {
           type: 'password', autocomplete: 'new-password',
           onInput: (e) => { fields.confirm = e.target.value; }
         }));
-        grid.append(el('div', { class: 'hint', text: 'Todas as credenciais ja salvas serao re-cifradas com a nova chave. Nao ha recuperacao: guarde a senha.' }));
+        grid.append(el('div', { class: 'hint', text: 'Todas as credenciais já salvas serão re-cifradas com a nova chave. Não há recuperação: guarde a senha.' }));
       }
       return grid;
     },
@@ -391,7 +391,7 @@ async function masterPasswordDialog(disable) {
   });
 
   if (!ok) return;
-  if (!disable && fields.next !== fields.confirm) return toast('As senhas nao conferem', 'err');
+  if (!disable && fields.next !== fields.confirm) return toast('As senhas não conferem', 'err');
   if (!disable && fields.next.length < 8) return toast('Use pelo menos 8 caracteres', 'err');
 
   await guard(async () => {
@@ -412,7 +412,7 @@ export async function unlockVaultDialog() {
     title: 'Cofre bloqueado',
     label: 'Senha mestra',
     password: true,
-    hint: 'Necessaria para usar credenciais salvas.'
+    hint: 'Necessária para usar credenciais salvas.'
   });
   if (pass === undefined) return false;
   const ok = await window.tsm.vault.unlock(pass);
@@ -429,8 +429,8 @@ export async function identitiesDialog() {
     await reloadIdentities();
     const table = el('table', { class: 'grid' });
     table.append(el('thead', {}, el('tr', {}, [
-      el('th', { text: 'Nome' }), el('th', { text: 'Usuario' }),
-      el('th', { text: 'Metodo' }), el('th', { text: '' })
+      el('th', { text: 'Nome' }), el('th', { text: 'Usuário' }),
+      el('th', { text: 'Método' }), el('th', { text: '' })
     ])));
     const tbody = el('tbody');
     for (const i of state.identities) {
@@ -445,7 +445,7 @@ export async function identitiesDialog() {
             onClick: async () => {
               const ok = await confirmDialog({
                 title: 'Excluir credencial', message: `Excluir "${i.name}"?`,
-                detail: 'As sessoes que a usam voltam a pedir senha.', danger: true
+                detail: 'As sessões que a usam voltam a pedir senha.', danger: true
               });
               if (ok) {
                 await window.tsm.identities.remove(i.id);
@@ -490,9 +490,9 @@ async function editIdentity(identity) {
     render: () => el('div', { class: 'form-grid' }, [
       el('label', { text: 'Nome' }),
       el('input', { type: 'text', value: model.name, onInput: (e) => { model.name = e.target.value; } }),
-      el('label', { text: 'Usuario' }),
+      el('label', { text: 'Usuário' }),
       el('input', { type: 'text', value: model.username, onInput: (e) => { model.username = e.target.value; } }),
-      el('label', { text: 'Metodo' }),
+      el('label', { text: 'Método' }),
       select(
         [{ value: 'password', label: 'Senha' }, { value: 'key', label: 'Chave privada' }],
         model.authType, (v) => { model.authType = v; }
@@ -502,7 +502,7 @@ async function editIdentity(identity) {
       el('label', { text: 'Senha' }),
       el('input', {
         type: 'password',
-        placeholder: hasPassword ? '•••••••• (guardada)' : 'nao definida',
+        placeholder: hasPassword ? '•••••••• (guardada)' : 'não definida',
         autocomplete: 'new-password',
         onInput: (e) => { pending.password = e.target.value; }
       })
@@ -534,7 +534,7 @@ export async function knownHostsDialog() {
     const table = el('table', { class: 'grid' });
     table.append(el('thead', {}, el('tr', {}, [
       el('th', { text: 'Host' }), el('th', { text: 'Porta' }),
-      el('th', { text: 'Impressao digital' }), el('th', { text: 'Visto em' }), el('th', { text: '' })
+      el('th', { text: 'Impressão digital' }), el('th', { text: 'Visto em' }), el('th', { text: '' })
     ])));
     const tbody = el('tbody');
     for (const h of hosts) {
@@ -564,13 +564,13 @@ export async function knownHostsDialog() {
   });
 }
 
-// ---------------------------------------------------------- historico -----
+// ---------------------------------------------------------- histórico -----
 export async function historyDialog() {
   const rows = await window.tsm.system.log(300);
   const table = el('table', { class: 'grid' });
   table.append(el('thead', {}, el('tr', {}, [
-    el('th', { text: 'Inicio' }), el('th', { text: 'Sessao' }), el('th', { text: 'Tipo' }),
-    el('th', { text: 'Destino' }), el('th', { text: 'Duracao' }), el('th', { text: 'Status' })
+    el('th', { text: 'Início' }), el('th', { text: 'Sessão' }), el('th', { text: 'Tipo' }),
+    el('th', { text: 'Destino' }), el('th', { text: 'Duração' }), el('th', { text: 'Status' })
   ])));
   const tbody = el('tbody');
   for (const r of rows) {
@@ -587,17 +587,17 @@ export async function historyDialog() {
   table.append(tbody);
 
   const action = await modal({
-    title: 'Historico de conexoes',
+    title: 'Histórico de conexões',
     width: 820,
     render: () => rows.length ? table : el('p', { class: 'muted', text: 'Nada por aqui ainda.' }),
     footer: (api) => [
-      el('button', { class: 'danger', text: 'Limpar historico', onClick: () => api.close('clear') }),
+      el('button', { class: 'danger', text: 'Limpar histórico', onClick: () => api.close('clear') }),
       el('button', { class: 'primary', text: 'Fechar', onClick: () => api.close(true) })
     ]
   });
   if (action === 'clear') {
     await window.tsm.system.clearLog();
-    toast('Historico limpo', 'ok');
+    toast('Histórico limpo', 'ok');
   }
 }
 
@@ -619,7 +619,7 @@ export async function importDialog() {
   const body = el('div', {}, [
     el('p', {}, [
       el('strong', { text: sourceLabel }), ' — ',
-      `${preview.sessions.length} sessao(oes) e ${preview.folders.length} pasta(s) detectada(s).`
+      `${preview.sessions.length} sessão(oes) e ${preview.folders.length} pasta(s) detectada(s).`
     ]),
     preview.detected ? el('p', {
       class: 'muted',
@@ -627,10 +627,10 @@ export async function importDialog() {
         .map(([k, v]) => `${k}=${v}`).join(', ')
     }) : null,
     el('div', { class: 'form-grid', style: 'margin:12px 0' }, [
-      el('label', { text: 'Estrategia' }),
+      el('label', { text: 'Estratégia' }),
       select([
-        { value: 'merge', label: 'Mesclar (mantem o que ja existe)' },
-        { value: 'replace', label: 'Substituir tudo (apaga as sessoes atuais)' }
+        { value: 'merge', label: 'Mesclar (mantem o que já existe)' },
+        { value: 'replace', label: 'Substituir tudo (apaga as sessões atuais)' }
       ], strategy, (v) => { strategy = v; }),
       preview.encrypted ? el('label', { text: 'Senha do arquivo' }) : null,
       preview.encrypted ? el('input', {
@@ -644,7 +644,7 @@ export async function importDialog() {
       ])
       : null,
     el('details', {}, [
-      el('summary', { text: 'Ver sessoes que serao importadas' }),
+      el('summary', { text: 'Ver sessões que serão importadas' }),
       el('ul', { style: 'max-height:200px;overflow:auto;font-size:12px' },
         preview.sessions.slice(0, 500).map((s) => el('li', {
           text: `${s.folderPath ? `${s.folderPath}/` : ''}${s.name} — ${s.type} ${s.config?.host || ''}`
@@ -653,7 +653,7 @@ export async function importDialog() {
   ]);
 
   const go = await modal({
-    title: 'Importar sessoes',
+    title: 'Importar sessões',
     width: 640,
     render: () => body,
     footer: (api) => [
@@ -669,12 +669,12 @@ export async function importDialog() {
     await reloadThemes();
     const s = res.stats;
     toast(
-      `Importado: ${s.sessions || 0} sessao(oes), ${s.folders || 0} pasta(s)` +
+      `Importado: ${s.sessions || 0} sessão(oes), ${s.folders || 0} pasta(s)` +
       (s.skipped ? `, ${s.skipped} ignorada(s)` : ''),
       'ok', 6000
     );
     if (res.warnings && res.warnings.length) {
-      console.warn('[TSM] avisos de importacao:', res.warnings);
+      console.warn('[TSM] avisos de importação:', res.warnings);
     }
   });
 }
@@ -687,7 +687,7 @@ export async function exportDialog() {
   const body = el('div');
   const rerender = () => {
     body.replaceChildren(el('div', {}, [
-      el('p', { text: `${state.sessions.length} sessao(oes) serao exportadas em JSON.` }),
+      el('p', { text: `${state.sessions.length} sessão(oes) serão exportadas em JSON.` }),
       el('div', { class: 'full' }, [
         checkbox('Incluir credenciais salvas (cifradas no arquivo)', includeSecrets, (v) => {
           includeSecrets = v;
@@ -699,14 +699,14 @@ export async function exportDialog() {
         el('input', { type: 'password', onInput: (e) => { passphrase = e.target.value; } }),
         el('label', { text: 'Confirmar' }),
         el('input', { type: 'password', onInput: (e) => { confirmPass = e.target.value; } }),
-        el('div', { class: 'hint', text: 'AES-256-GCM com chave derivada por scrypt. Sem essa senha, as credenciais do arquivo sao irrecuperaveis.' })
-      ]) : el('p', { class: 'muted', text: 'Sem as credenciais, o arquivo carrega so hosts, portas, usuarios e preferencias — pode ser versionado com tranquilidade.' })
+        el('div', { class: 'hint', text: 'AES-256-GCM com chave derivada por scrypt. Sem essa senha, as credenciais do arquivo são irrecuperáveis.' })
+      ]) : el('p', { class: 'muted', text: 'Sem as credenciais, o arquivo carrega só hosts, portas, usuários e preferências — pode ser versionado com tranquilidade.' })
     ]));
   };
   rerender();
 
   const go = await modal({
-    title: 'Exportar sessoes',
+    title: 'Exportar sessões',
     width: 560,
     render: () => body,
     footer: (api) => [
@@ -718,28 +718,28 @@ export async function exportDialog() {
 
   if (includeSecrets) {
     if (passphrase.length < 8) return toast('Use uma senha de pelo menos 8 caracteres', 'err');
-    if (passphrase !== confirmPass) return toast('As senhas nao conferem', 'err');
+    if (passphrase !== confirmPass) return toast('As senhas não conferem', 'err');
   }
 
   await guard(async () => {
     const res = await window.tsm.io.export({ includeSecrets, passphrase: passphrase || null });
     if (res.canceled) return;
-    toast(`${res.sessions} sessao(oes) exportadas para ${res.filePath}`, 'ok', 6000);
+    toast(`${res.sessions} sessão(oes) exportadas para ${res.filePath}`, 'ok', 6000);
   });
 }
 
 // ------------------------------------------------------------- ajuda ------
 export async function shortcutsDialog() {
   const rows = [
-    ['Ctrl+N', 'Nova sessao'],
-    ['Ctrl+Shift+N', 'Conexao rapida'],
+    ['Ctrl+N', 'Nova sessão'],
+    ['Ctrl+Shift+N', 'Conexão rápida'],
     ['Ctrl+Shift+F', 'Nova pasta'],
     ['Ctrl+Shift+T', 'Shell local'],
-    ['Ctrl+P', 'Buscar sessao (paleta)'],
+    ['Ctrl+P', 'Buscar sessão (paleta)'],
     ['Ctrl+W', 'Fechar aba'],
     ['Ctrl+D', 'Duplicar aba'],
     ['Ctrl+R', 'Reconectar aba'],
-    ['Ctrl+Tab', 'Proxima aba'],
+    ['Ctrl+Tab', 'Próxima aba'],
     ['Ctrl+1..9', 'Ir para a aba N'],
     ['Ctrl+Shift+C / V', 'Copiar / colar no terminal'],
     ['Ctrl+F', 'Localizar no terminal'],
@@ -775,11 +775,11 @@ export async function aboutDialog() {
     render: () => el('div', {}, [
       el('img', { class: 'about-logo', src: 'vendor/icon.png', alt: '' }),
       el('h2', { text: 'Total Session Manager', style: 'margin:0 0 4px' }),
-      el('p', { class: 'muted', text: `Versao ${i.version || '?'} · Electron ${i.electron} · Node ${i.node}` }),
-      el('p', { text: 'Gerenciador de sessoes SSH, Telnet, Shell local e SFTP/SCP. Sem limite de sessoes salvas.' }),
+      el('p', { class: 'muted', text: `Versão ${i.version || '?'} · Electron ${i.electron} · Node ${i.node}` }),
+      el('p', { text: 'Gerenciador de sessões SSH, Telnet, Shell local e SFTP/SCP. Sem limite de sessões salvas.' }),
       el('p', { class: 'muted', text: `Plataforma: ${i.platform}/${i.arch}` }),
-      el('p', { class: 'muted', text: `PTY local: ${i.hasPty ? 'disponivel' : 'indisponivel (modo pipe)'}` }),
-      el('p', { class: 'muted', text: `Modo: ${i.portable ? 'portatil (dados ao lado do executavel)' : 'perfil do usuario'}` }),
+      el('p', { class: 'muted', text: `PTY local: ${i.hasPty ? 'disponível' : 'indisponível (modo pipe)'}` }),
+      el('p', { class: 'muted', text: `Modo: ${i.portable ? 'portátil (dados ao lado do executável)' : 'perfil do usuário'}` }),
       el('p', { class: 'muted', text: `SQLite: ${i.sqliteEngine || '?'}` }),
       el('p', { class: 'muted', style: 'font-size:11px;word-break:break-all', text: `Dados: ${i.dataDir || ''}` })
     ]),

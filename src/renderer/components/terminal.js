@@ -39,20 +39,20 @@ function terminalOptions(session) {
 /**
  * Cria um painel e conecta.
  *
- * `spec`: { session } para sessao salva, ou { type, config, name } para ad-hoc.
+ * `spec`: { session } para sessão salva, ou { type, config, name } para ad-hoc.
  * `placement`:
  *   - `{}`                              -> abre numa aba nova;
  *   - `{ splitFrom: paneId, dir, before }` -> divide o painel indicado.
  *
- * O elemento do painel NAO e inserido no DOM aqui: quem posiciona e o
- * renderizador da arvore de layout, que reaproveita o mesmo elemento a cada
- * mudanca (por isso o buffer e o scroll do terminal sobrevivem ao split).
+ * O elemento do painel NÃO é inserido no DOM aqui: quem posiciona é o
+ * renderizador da árvore de layout, que reaproveita o mesmo elemento a cada
+ * mudança (por isso o buffer e o scroll do terminal sobrevivem ao split).
  */
 export async function openPane(spec, placement = {}) {
   const id = `pane-${++paneSeq}`;
   const session = spec.session || null;
   const type = spec.type || (session && session.type) || 'ssh';
-  const name = spec.name || (session && session.name) || spec.config?.host || 'Sessao';
+  const name = spec.name || (session && session.name) || spec.config?.host || 'Sessão';
 
   const host = el('div', { class: 'term-host' });
   const findBar = buildFindBar();
@@ -87,10 +87,10 @@ export async function openPane(spec, placement = {}) {
   state.activePaneId = id;
 
   wireTerminal(pane);
-  emit('panes');   // o app monta a arvore e insere `root` no DOM, sincronamente
+  emit('panes');   // o app monta a árvore e insere `root` no DOM, sincronamente
 
-  // `term.open()` exige o host ja no documento — e `term.element` so existe
-  // depois dele, entao os handlers de DOM vem em seguida.
+  // `term.open()` exige o host já no documento — e `term.element` só existe
+  // depois dele, então os handlers de DOM vem em seguida.
   mountTerminal(pane);
   requestAnimationFrame(() => {
     fitPane(pane);
@@ -110,7 +110,7 @@ function mountTerminal(pane) {
   return true;
 }
 
-/** Encaixa o novo painel na arvore: aba nova ou divisao de um painel existente. */
+/** Encaixa o novo painel na árvore: aba nova ou divisão de um painel existente. */
 function attachToLayout(paneId, placement) {
   if (placement.splitFrom) {
     const source = paneById(placement.splitFrom);
@@ -135,7 +135,7 @@ function attachToLayout(paneId, placement) {
   return tab;
 }
 
-/** Divide o painel indicado abrindo outra instancia da mesma sessao. */
+/** Divide o painel indicado abrindo outra instancia da mesma sessão. */
 export function splitPane(pane, dir) {
   if (!pane) return Promise.resolve(null);
   const spec = pane.session
@@ -147,13 +147,13 @@ export function splitPane(pane, dir) {
 export function fitPane(pane) {
   if (!pane || !pane.opened) return;
   const tab = tabById(pane.tabId);
-  if (!tab || tab.id !== state.activeTabId) return;   // aba oculta: sem dimensoes
+  if (!tab || tab.id !== state.activeTabId) return;   // aba oculta: sem dimensões
   try {
     pane.fit.fit();
-  } catch { /* terminal ainda nao pintado */ }
+  } catch { /* terminal ainda não pintado */ }
 }
 
-/** Reajusta todos os terminais da aba visivel — chamado apos mudar o layout. */
+/** Reajusta todos os terminais da aba visível — chamado após mudar o layout. */
 export function fitActiveTab() {
   const tab = tabById(state.activeTabId);
   if (!tab) return;
@@ -170,7 +170,7 @@ function buildFindBar() {
   const node = el('div', { class: 'find-bar hidden' }, [
     input,
     el('button', { text: '↑', title: 'Anterior' }),
-    el('button', { text: '↓', title: 'Proximo' }),
+    el('button', { text: '↓', title: 'Próximo' }),
     el('button', { text: '✕', title: 'Fechar' })
   ]);
   const [prev, next, close] = [...node.querySelectorAll('button')];
@@ -239,7 +239,7 @@ function wireTerminal(pane) {
 
 }
 
-/** Handlers que dependem de `term.element` — so existem apos `term.open()`. */
+/** Handlers que dependem de `term.element` — só existem após `term.open()`. */
 function wireTerminalDom(pane) {
   const { term } = pane;
 
@@ -248,7 +248,7 @@ function wireTerminalDom(pane) {
     if (state.activePaneId !== pane.id) focusPane(pane.id);
   }, true);
 
-  // Botao direito: colar (padrao) ou menu, conforme preferencia.
+  // Botão direito: colar (padrão) ou menu, conforme preferência.
   term.element.addEventListener('contextmenu', async (e) => {
     const mode = setting('terminal.rightClick', 'paste');
     if (mode === 'paste') {
@@ -279,7 +279,7 @@ function wireTerminalDom(pane) {
   });
 
   // O painel muda de tamanho por resize da janela OU por arraste de divisoria;
-  // o observer cobre os dois casos sem o layout precisar avisar ninguem.
+  // o observer cobre os dois casos sem o layout precisar avisar ninguém.
   const ro = new ResizeObserver(() => fitPane(pane));
   ro.observe(pane.host);
   pane.disposers.push(() => ro.disconnect());
@@ -342,7 +342,7 @@ export async function closePane(paneId, { skipConfirm = false } = {}) {
     const ok = await confirmDialog({
       title: 'Fechar painel',
       message: `Encerrar "${pane.name}"?`,
-      detail: 'A conexao sera desfeita.',
+      detail: 'A conexão será desfeita.',
       confirmLabel: 'Fechar',
       danger: true
     });
@@ -360,8 +360,8 @@ export async function closePane(paneId, { skipConfirm = false } = {}) {
   if (state.sftp.paneId === paneId) state.sftp.paneId = null;
 
   if (tab) {
-    // Escolhe o proximo foco ANTES de mexer na arvore, para pegar um vizinho
-    // de verdade em vez de "o ultimo painel aberto em qualquer aba".
+    // Escolhe o próximo foco ANTES de mexer na árvore, para pegar um vizinho
+    // de verdade em vez de "o último painel aberto em qualquer aba".
     const siblings = layout.leafIds(tab.root).filter((id) => id !== paneId);
     tab.root = layout.removeLeaf(tab.root, paneId);
 
@@ -386,7 +386,7 @@ export async function closePane(paneId, { skipConfirm = false } = {}) {
   });
 }
 
-/** Fecha a aba inteira, com uma unica confirmacao para todos os paineis. */
+/** Fecha a aba inteira, com uma única confirmacao para todos os painéis. */
 export async function closeTab(tabId) {
   const tab = tabById(tabId);
   if (!tab) return;
@@ -397,7 +397,7 @@ export async function closeTab(tabId) {
     const ok = await confirmDialog({
       title: 'Fechar aba',
       message: ids.length > 1
-        ? `Encerrar os ${ids.length} paineis desta aba?`
+        ? `Encerrar os ${ids.length} painéis desta aba?`
         : `Encerrar "${conectados[0].name}"?`,
       detail: conectados.map((p) => `• ${p.name}`).join('\n'),
       confirmLabel: 'Fechar',
@@ -460,12 +460,12 @@ export function copySelection(pane) {
 export async function pasteInto(pane) {
   const text = await window.tsm.app.paste();
   if (!text || !pane.connectionId) return;
-  // Colagem multilinha e um classico de acidente em producao.
+  // Colagem multilinha é um classico de acidente em produção.
   if (text.includes('\n') && text.trim().split('\n').length > 3) {
     const ok = await confirmDialog({
       title: 'Colar varias linhas',
-      message: `Colar ${text.trim().split('\n').length} linhas nesta sessao?`,
-      detail: 'Cada quebra de linha sera executada como um comando.',
+      message: `Colar ${text.trim().split('\n').length} linhas nesta sessão?`,
+      detail: 'Cada quebra de linha será executada como um comando.',
       confirmLabel: 'Colar'
     });
     if (!ok) return;
@@ -478,7 +478,7 @@ export function refreshAppearance() {
   for (const pane of state.panes) {
     const opts = terminalOptions(pane.session);
     for (const [k, v] of Object.entries(opts)) {
-      try { pane.term.options[k] = v; } catch { /* opcao nao aplicavel */ }
+      try { pane.term.options[k] = v; } catch { /* opção não aplicável */ }
     }
     try { pane.fit.fit(); } catch { /* noop */ }
   }
@@ -534,8 +534,8 @@ export function bindConnectionEvents() {
     if (!pane) return;
     pane.status = 'desconectado';
     pane.connectionId = null;
-    pane.term.write(`\r\n\x1b[90m[TSM] sessao encerrada (codigo ${code}).\x1b[0m\r\n`);
-    setBanner(pane, 'Sessao encerrada.');
+    pane.term.write(`\r\n\x1b[90m[TSM] sessão encerrada (código ${code}).\x1b[0m\r\n`);
+    setBanner(pane, 'Sessão encerrada.');
     emit('panes');
 
     if (setting('connection.reconnectOnDrop', false) && code !== 0) {
@@ -552,30 +552,30 @@ export function bindConnectionEvents() {
     emit('panes');
   });
 
-  // Senha/OTP pedidos pelo servidor durante a autenticacao.
+  // Senha/OTP pedidos pelo servidor durante a autenticação.
   window.tsm.conn.onPrompt(async ({ id, prompt }) => {
     const pane = state.panes.find((p) => p.connectionId === id);
     const value = await promptDialog({
-      title: pane ? `Autenticacao — ${pane.name}` : 'Autenticacao',
+      title: pane ? `Autenticação — ${pane.name}` : 'Autenticação',
       label: prompt.message || 'Senha',
       password: !prompt.echo
     });
     window.tsm.conn.answerPrompt(id, prompt.id, value ?? '');
   });
 
-  // Verificacao de chave de host.
+  // Verificação de chave de host.
   window.tsm.conn.onHostKey(async (payload) => {
     const { id, host, port, fingerprint, changed, previous } = payload;
     const accepted = await confirmDialog({
       title: changed ? '⚠ A CHAVE DO HOST MUDOU' : 'Host desconhecido',
       message: changed
-        ? `A chave de ${host}:${port} nao e a mesma de antes.`
-        : `Primeira conexao com ${host}:${port}.`,
+        ? `A chave de ${host}:${port} não é a mesma de antes.`
+        : `Primeira conexão com ${host}:${port}.`,
       detail: changed
         ? `Anterior: ${previous}\nAtual:     ${fingerprint}\n\n` +
-          'Isso pode ser reinstalacao do servidor — ou um ataque man-in-the-middle. ' +
-          'So aceite se voce sabe por que a chave mudou.'
-        : `Impressao digital: ${fingerprint}\n\nConfirme por um canal confiavel antes de aceitar.`,
+          'Isso pode ser reinstalação do servidor — ou um ataque man-in-the-middle. ' +
+          'So aceite se você sabe por que a chave mudou.'
+        : `Impressão digital: ${fingerprint}\n\nConfirme por um canal confiável antes de aceitar.`,
       confirmLabel: changed ? 'Aceitar mesmo assim' : 'Aceitar e salvar',
       danger: !!changed
     });

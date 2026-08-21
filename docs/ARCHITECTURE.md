@@ -137,9 +137,14 @@ de forma uniforme e a UI não sabe a diferença.
 - **`telnet.js`** — implementação própria da RFC 854/855. Faz o parse do fluxo IAC
   separando comandos de texto, negocia ECHO/SGA/NAWS/TERMINAL-TYPE/BINARY, escapa `0xFF`
   na escrita e trata chunks parciais (um `IAC SB … IAC SE` pode chegar dividido).
+- **`serial.js`** — `serialport` (binários Node-API prontos, sem compilador). Serial não é
+  um terminal: não há `resize` para enviar, o equipamento pode não ecoar o que você digita,
+  e o que a tecla Enter deve mandar (CR, LF ou CR+LF) muda de aparelho para aparelho. Cada
+  uma dessas três diferenças virou uma opção da sessão, porque mandar o fim de linha errado
+  é a causa nº 1 de "conecta mas não responde".
 - **`shell.js`** — `@lydell/node-pty` (binários Node-API pré-compilados por plataforma,
   sem compilação) com `node-pty` clássico como segunda opção. Detecta os shells reais da
-  máquina. Se nenhum módulo carregar, degrada para `child_process` com pipes e avisa no
+  máquina. Se nenhum módulo carregar, degradá para `child_process` com pipes e avisa no
   terminal, em vez de falhar a abertura do app.
 
 ---
@@ -216,7 +221,17 @@ que cobre resize de janela e arraste de divisória sem o layout precisar avisar 
 | `ssh2` puro JS | Sem depender de `ssh.exe` no PATH; controle fino sobre autenticação, host key e túneis. |
 | Telnet próprio | Nenhuma biblioteca de Telnet no npm negocia NAWS e TERMINAL-TYPE de forma confiável para equipamento de rede. |
 | Sem framework de UI | Uma árvore e ~10 diálogos não justificam React + bundler pesado. |
-| Módulos nativos opcionais | `node-pty` degrada para pipes. Um app que não abre é pior que um app com uma função reduzida. |
+| Módulos nativos opcionais | `node-pty` degradá para pipes. Um app que não abre é pior que um app com uma função reduzida. |
+
+---
+
+## Prévia de personalização
+
+A prévia do tema era montada uma vez, junto com o painel de configurações, e nunca mais
+redesenhada: trocar o tema mudava os terminais mas deixava a prévia mostrando o tema
+anterior. Agora a troca de tema redesenha o painel, e mudanças de tipografia são aplicadas
+**sem remontar** — se remontasse, o campo que o usuário está digitando perderia o foco a
+cada tecla.
 
 ---
 

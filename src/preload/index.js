@@ -1,8 +1,8 @@
 'use strict';
 /**
  * Ponte segura entre o renderer e o processo principal.
- * `contextIsolation` fica ligado e o renderer nao tem Node: tudo passa por aqui,
- * numa superficie explicita. Nenhuma credencial em claro atravessa esta ponte
+ * `contextIsolation` fica ligado e o renderer não tem Node: tudo passa por aqui,
+ * numa superfície explicita. Nenhuma credencial em claro atravessa esta ponte
  * no sentido main -> renderer.
  */
 const { contextBridge, ipcRenderer } = require('electron');
@@ -10,12 +10,12 @@ const { contextBridge, ipcRenderer } = require('electron');
 /** Desempacota `{ok,data,error}` e lanca do lado do renderer quando falha. */
 async function call(channel, ...args) {
   const res = await ipcRenderer.invoke(channel, ...args);
-  if (!res) throw new Error(`Canal ${channel} nao respondeu`);
+  if (!res) throw new Error(`Canal ${channel} não respondeu`);
   if (!res.ok) throw new Error(res.error);
   return res.data;
 }
 
-/** Assinatura de evento que devolve a funcao de cancelamento. */
+/** Assinatura de evento que devolve a função de cancelamento. */
 function on(channel, handler) {
   const listener = (_event, payload) => handler(payload);
   ipcRenderer.on(channel, listener);

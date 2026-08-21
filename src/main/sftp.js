@@ -1,12 +1,12 @@
 'use strict';
 /**
- * Painel de arquivos (SFTP/SCP) apoiado na MESMA conexao SSH ja autenticada —
+ * Painel de arquivos (SFTP/SCP) apoiado na MESMA conexão SSH já autenticada —
  * como o "SSH browser" do MobaXterm. Nada de segunda senha, segundo TCP.
  *
- * `scp` e `sftp` compartilham o transporte SSH; o que muda e o protocolo de
+ * `scp` e `sftp` compartilham o transporte SSH; o que muda é o protocolo de
  * arquivo. Usamos o subsistema SFTP (mais capaz e presente em qualquer
  * OpenSSH moderno) e expomos `scpDownload`/`scpUpload` para servidores
- * legados que so tem o binario `scp`.
+ * legados que só tem o binário `scp`.
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -17,7 +17,7 @@ const handles = new Map();  // connectionId -> sftp handle
 async function handleFor(connectionId) {
   if (handles.has(connectionId)) return handles.get(connectionId);
   const conn = manager.sshConnectionFor(connectionId);
-  if (!conn) throw new Error('Esta conexao nao suporta transferencia de arquivos');
+  if (!conn) throw new Error('Esta conexão não suporta transferência de arquivos');
   const sftp = await conn.sftp();
   sftp.on('close', () => handles.delete(connectionId));
   handles.set(connectionId, sftp);
@@ -105,7 +105,7 @@ async function stat(connectionId, target) {
 async function remove(connectionId, target, isDirectory) {
   const sftp = await handleFor(connectionId);
   if (!isDirectory) return p((cb) => sftp.unlink(target, cb));
-  // Diretorio: esvazia recursivamente antes de remover.
+  // Diretório: esvazia recursivamente antes de remover.
   const entries = await p((cb) => sftp.readdir(target, cb));
   for (const e of entries) {
     const child = posixJoin(target, e.filename);
@@ -170,10 +170,10 @@ async function upload(connectionId, localPath, remotePath, onProgress) {
   return { remotePath, bytes: total };
 }
 
-/** Envia uma pasta inteira, criando a arvore no destino. */
+/** Envia uma pasta inteira, criando a árvore no destino. */
 async function uploadDirectory(connectionId, localDir, remoteDir, onProgress) {
   const sftp = await handleFor(connectionId);
-  try { await p((cb) => sftp.mkdir(remoteDir, cb)); } catch { /* ja existe */ }
+  try { await p((cb) => sftp.mkdir(remoteDir, cb)); } catch { /* já existe */ }
   for (const entry of fs.readdirSync(localDir, { withFileTypes: true })) {
     const lp = path.join(localDir, entry.name);
     const rp = posixJoin(remoteDir, entry.name);

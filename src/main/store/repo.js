@@ -20,11 +20,11 @@ function parseFolder(row) {
 }
 
 /**
- * Roda `fn` dentro de uma unica transacao.
+ * Roda `fn` dentro de uma única transação.
  *
- * Isso nao e um detalhe de estilo: no motor WASM cada commit custa um fsync
- * (~120 ms). Gravar 500 sessoes uma a uma leva mais de um minuto; as mesmas
- * 500 dentro de uma transacao levam ~250 ms. Todo laco de escrita passa aqui.
+ * Isso não é um detalhe de estilo: no motor WASM cada commit custa um fsync
+ * (~120 ms). Gravar 500 sessões uma a uma leva mais de um minuto; as mesmas
+ * 500 dentro de uma transação levam ~250 ms. Todo laço de escrita passa aqui.
  */
 function tx(fn) {
   return db.get().transaction(fn)();
@@ -56,9 +56,9 @@ const folders = {
 
   update(id, patch) {
     const cur = folders.find(id);
-    if (!cur) throw new Error(`Pasta ${id} nao encontrada`);
+    if (!cur) throw new Error(`Pasta ${id} não encontrada`);
     if (patch.parentId !== undefined && wouldCycle(id, patch.parentId)) {
-      throw new Error('Nao e possivel mover uma pasta para dentro dela mesma');
+      throw new Error('Não é possível mover uma pasta para dentro dela mesma');
     }
     db.get().prepare(
       `UPDATE folders SET name = ?, parent_id = ?, sort_order = ?, color = ?, icon = ?,
@@ -76,7 +76,7 @@ const folders = {
     return folders.find(id);
   },
 
-  /** Remove a pasta. Subpastas caem em cascata; sessoes sobem para a raiz. */
+  /** Remove a pasta. Subpastas caem em cascata; sessões sobem para a raiz. */
   remove(id, { deleteSessions = false } = {}) {
     const d = db.get();
     d.transaction(() => {
@@ -127,7 +127,7 @@ function nextOrder(table, col, value) {
   return (value === null ? stmt.get() : stmt.get(value)).n;
 }
 
-// -------------------------------------------------------------- sessoes ----
+// -------------------------------------------------------------- sessões ----
 const sessions = {
   list() {
     return db.get()
@@ -182,7 +182,7 @@ const sessions = {
 
   update(id, patch) {
     const cur = sessions.find(id);
-    if (!cur) throw new Error(`Sessao ${id} nao encontrada`);
+    if (!cur) throw new Error(`Sessão ${id} não encontrada`);
     db.get().prepare(
       `UPDATE sessions SET folder_id = ?, name = ?, type = ?, sort_order = ?, config = ?,
                            theme_id = ?, color = ?, icon = ?, tags = ?, notes = ?,
@@ -207,7 +207,7 @@ const sessions = {
 
   duplicate(id) {
     const cur = sessions.find(id);
-    if (!cur) throw new Error(`Sessao ${id} nao encontrada`);
+    if (!cur) throw new Error(`Sessão ${id} não encontrada`);
     return sessions.create({
       folderId: cur.folder_id,
       name: `${cur.name} (copia)`,
@@ -236,7 +236,7 @@ const sessions = {
       .run(now(), id);
   },
 
-  /** Reordena/move em lote - usado pelo drag & drop da arvore. */
+  /** Reordena/move em lote - usado pelo drag & drop da árvore. */
   reorder(items) {
     const d = db.get();
     const stmt = d.prepare('UPDATE sessions SET folder_id = ?, sort_order = ?, updated_at = ? WHERE id = ?');
@@ -266,7 +266,7 @@ const identities = {
   },
   update(id, patch) {
     const cur = identities.find(id);
-    if (!cur) throw new Error(`Identidade ${id} nao encontrada`);
+    if (!cur) throw new Error(`Identidade ${id} não encontrada`);
     db.get().prepare(
       `UPDATE identities SET name = ?, username = ?, auth_type = ?, key_path = ?, updated_at = ?
        WHERE id = ?`
@@ -285,7 +285,7 @@ const identities = {
   }
 };
 
-// ------------------------------------------------------------ preferencias -
+// ------------------------------------------------------------ preferências -
 const settings = {
   all() {
     const out = {};
@@ -397,7 +397,7 @@ const snippets = {
   },
   update(id, patch) {
     const cur = snippets.find(id);
-    if (!cur) throw new Error(`Comando ${id} nao encontrado`);
+    if (!cur) throw new Error(`Comando ${id} não encontrado`);
     db.get().prepare(
       `UPDATE snippets SET name = ?, content = ?, category = ?, shortcut = ?, run = ?,
                            sort_order = ?, updated_at = ?
