@@ -86,4 +86,11 @@ jobs:
             echo "nenhum artefato para anexar"
             exit 0
           fi
+          # Os tres sistemas correm em paralelo e qualquer um pode chegar aqui
+          # primeiro: criar o release se ainda nao existir evita depender da
+          # ordem, e o `|| true` cobre a corrida entre dois jobs simultaneos.
+          if ! gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release create "${GITHUB_REF_NAME}" \
+              --title "TSM ${GITHUB_REF_NAME}" --generate-notes || true
+          fi
           gh release upload "${GITHUB_REF_NAME}" "${arquivos[@]}" --clobber
