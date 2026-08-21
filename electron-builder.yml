@@ -12,8 +12,17 @@ files:
   - assets/**/*
   - package.json
 
+# Nenhuma dependencia nativa precisa ser recompilada: `@lydell/node-pty` e
+# `@serialport/bindings-cpp` distribuem binarios Node-API (ABI estavel entre
+# versoes de Node e Electron) e o SQLite roda em WebAssembly. Deixar o
+# electron-builder chamar o node-gyp so faz o empacotamento exigir um compilador
+# que nem a maquina de desenvolvimento nem os runners do CI tem configurado.
+npmRebuild: false
+
 asarUnpack:
   - "**/node_modules/@lydell/node-pty*/**"
+  - "**/node_modules/@serialport/**"
+  - "**/node_modules/serialport/**"
   - "**/node_modules/node-sqlite3-wasm/**"
   - "**/node_modules/better-sqlite3/**"
 
