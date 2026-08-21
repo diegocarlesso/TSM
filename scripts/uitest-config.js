@@ -114,8 +114,26 @@
     trocarSelect(campo('Tipo'), 'serial');
     await sleep(300);
 
-    record(!!campo('Porta'), 'o editor mostra o campo de porta');
+    const campoPorta = campo('Porta');
+    record(!!campoPorta, 'o editor mostra o campo de porta');
     record(!!campo('Velocidade (baud)'), 'o editor mostra a velocidade');
+
+    // No estilo do PuTTY: da para DIGITAR a porta, nao so escolher da lista.
+    const inputPorta = campoPorta.querySelector('input[list]');
+    record(!!inputPorta, 'a porta e um campo digitavel com sugestoes, nao uma lista fechada');
+    if (inputPorta) {
+      inputPorta.value = '/dev/ttyUSB9';
+      inputPorta.dispatchEvent(new Event('input', { bubbles: true }));
+      await sleep(150);
+      record(inputPorta.value === '/dev/ttyUSB9',
+        'aceita uma porta que o sistema nao enumerou');
+      inputPorta.value = '';
+      inputPorta.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    record(
+      !!campo('Velocidade (baud)').querySelector('input[list]'),
+      'a velocidade tambem aceita valor digitado'
+    );
 
     const portas = [...campo('Porta').querySelectorAll('option')]
       .map((o) => o.value).filter(Boolean);
@@ -138,6 +156,7 @@
 
     record(!!campo('Bits de dados'), 'a aba Avançado traz bits de dados');
     record(!!campo('Paridade'), 'a aba Avançado traz paridade');
+    record(!!campo('Controle de fluxo'), 'controle de fluxo num campo so, como no PuTTY');
     record(!!campo('Enter envia'), 'dá para escolher o fim de linha (CR/LF/CRLF)');
 
     await fecharModal();

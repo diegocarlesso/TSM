@@ -20,10 +20,11 @@ reutiliza, modifica nem contorna nada do produto da Mobatek.
   automaticamente na conexão.
 - **Telnet** com negociação real de opções (ECHO, SGA, NAWS, TERMINAL-TYPE, BINARY) e
   auto-login opcional por regex de prompt — funciona com switches, OLTs e equipamentos legados.
-- **Serial (COM/tty)** com baud, bits de dados, paridade, bits de parada, controle de fluxo
-  por hardware ou software, escolha do que a tecla Enter envia (CR, LF ou CR+LF), eco local
-  opcional e sinal de **break**. As portas são detectadas na máquina e a lista é
-  atualizável sem fechar o editor.
+- **Serial (COM/tty)** com baud, bits de dados, paridade, bits de parada, controle de fluxo,
+  escolha do que a tecla Enter envia (CR, LF ou CR+LF), eco local opcional e sinal de
+  **break**. A porta e a velocidade são campos **digitáveis com sugestões**, no estilo do
+  PuTTY: as portas detectadas aparecem na lista, mas você pode digitar uma que ainda não
+  existe (adaptador desconectado) ou que fugiu da enumeração.
 - **Shell local** com PTY de verdade (`node-pty`): PowerShell 7, Windows PowerShell, cmd,
   Git Bash, WSL, bash/zsh. Cai para modo pipe se o módulo nativo não estiver disponível.
 - **Algoritmos legados** opcionais por sessão, para equipamentos antigos que ainda falam
@@ -286,7 +287,20 @@ arrastáveis, navegação entre painéis e fechamento.
 TSM_SMOKE=1 TSM_UITEST=scripts/uitest-config.js npx electron .
 ```
 
-Mais 13 verificações sobre a prévia de personalização e o editor de sessão serial.
+Mais 18 verificações sobre a prévia de personalização e o editor de sessão serial.
+
+```bash
+TSM_DATA_DIR=./serial node scripts/seed-serial.js
+```
+
+```bash
+TSM_SMOKE=1 TSM_UITEST=scripts/uitest-serial-real.js TSM_DATA_DIR=./serial npx electron .
+```
+
+Abre uma porta serial **real** da máquina e confere a abertura com os parâmetros pedidos, a
+saída de bytes e o erro do sistema ao tentar abrir a mesma porta duas vezes. Sem equipamento
+na outra ponta nada retorna — para testar a recepção é preciso um loopback nos pinos 2 e 3
+do DB9, ou um aparelho conectado.
 
 Para gerar um banco de demonstração e uma captura de tela:
 

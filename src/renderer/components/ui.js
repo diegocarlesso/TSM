@@ -222,6 +222,35 @@ export function checkbox(labelText, checked, onChange) {
   return el('label', { class: 'inline', style: 'color:var(--text)' }, [input, labelText]);
 }
 
+let comboSeq = 0;
+
+/**
+ * Campo de texto com sugestões — o comportamento do PuTTY para porta serial e
+ * velocidade.
+ *
+ * Uma lista fechada seria mais bonita e menos útil: a porta pode não existir
+ * agora (adaptador USB desconectado), pode ter nome fora do padrão
+ * (`/dev/serial/by-id/...`) ou simplesmente escapar da enumeração. Aqui o
+ * usuário escolhe da lista ou digita o que quiser.
+ */
+export function comboBox(options, value, onChange, { placeholder = '' } = {}) {
+  const listId = `tsm-combo-${++comboSeq}`;
+  const input = el('input', {
+    type: 'text',
+    value: value ?? '',
+    placeholder,
+    list: listId,
+    spellcheck: 'false',
+    autocomplete: 'off',
+    onInput: (e) => onChange(e.target.value.trim())
+  });
+  const datalist = el('datalist', { id: listId });
+  for (const opt of options) {
+    datalist.append(el('option', { value: opt.value, label: opt.label || undefined }));
+  }
+  return el('div', { class: 'combo' }, [input, datalist]);
+}
+
 export function select(options, value, onChange) {
   const node = el('select', { onChange: (e) => onChange(e.target.value) });
   for (const opt of options) {

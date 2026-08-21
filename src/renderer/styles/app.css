@@ -375,6 +375,8 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus { border-color: var(--accent); }
 .form-grid textarea { min-height: 70px; resize: vertical; font-family: var(--font-mono); }
 .inline { display: flex; gap: 6px; align-items: center; }
+.combo { flex: 1; min-width: 0; display: flex; }
+.combo input { width: 100%; }
 .hint { grid-column: 2; color: var(--text-mute); font-size: 11px; margin-top: -4px; }
 fieldset { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; margin: 0 0 12px; }
 legend { color: var(--text-dim); padding: 0 6px; }

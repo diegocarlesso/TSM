@@ -1,6 +1,6 @@
 'use strict';
 /** Editor de sessão (SSH / Telnet / Shell / SFTP) e conexão rápida. */
-import { el, modal, toast, guard, checkbox, select, promptDialog } from './ui.js';
+import { el, modal, toast, guard, checkbox, select, comboBox, promptDialog } from './ui.js';
 import { state, reloadTree, setting } from './state.js';
 
 const TYPES = [
@@ -17,6 +17,12 @@ const PARIDADES = [
   { value: 'odd', label: 'Ímpar' },
   { value: 'mark', label: 'Mark' },
   { value: 'space', label: 'Space' }
+];
+
+const CONTROLE_DE_FLUXO = [
+  { value: 'none', label: 'Nenhum' },
+  { value: 'xonxoff', label: 'XON/XOFF (software)' },
+  { value: 'rtscts', label: 'RTS/CTS (hardware)' }
 ];
 
 const FIM_DE_LINHA = [
@@ -131,23 +137,15 @@ export async function sessionDialog(session, { folderId = null } = {}) {
       add('Pasta', select(folderOptions, model.folderId || '', (v) => { model.folderId = v || null; }));
 
       if (model.type === 'serial') {
-        const opcoesPorta = [
-          { value: '', label: portasSeriais.length ? '(escolha a porta)' : '(nenhuma porta detectada)' },
-          ...portasSeriais.map((porta) => ({
-            value: porta.path,
-            label: porta.friendlyName || porta.manufacturer
-              ? `${porta.path} - ${porta.friendlyName || porta.manufacturer}`
-              : porta.path
-          }))
-        ];
-        // Uma porta salva pode não existir agora (adaptador USB desconectado):
-        // ela continua na lista para não sumir da configuração da sessão.
-        if (c.path && !portasSeriais.some((porta) => porta.path === c.path)) {
-          opcoesPorta.push({ value: c.path, label: `${c.path} (não conectada agora)` });
-        }
+        const opcoesPorta = portasSeriais.map((porta) => ({
+          value: porta.path,
+          label: porta.friendlyName || porta.manufacturer || porta.path
+        }));
 
         add('Porta', el('div', { class: 'inline' }, [
-          select(opcoesPorta, c.path || '', (v) => { c.path = v; }),
+          comboBox(opcoesPorta, c.path || '', (v) => { c.path = v; }, {
+            placeholder: (state.info && state.info.platform) === 'win32' ? 'COM3' : '/dev/ttyUSB0'
+          }),
           el('button', {
             text: 'Atualizar',
             title: 'Reler as portas disponíveis',
@@ -157,15 +155,16 @@ export async function sessionDialog(session, { folderId = null } = {}) {
             }
           })
         ]), portasSeriais.length
-          ? undefined
-          : 'Nenhuma porta encontrada. Conecte o adaptador e clique em Atualizar.');
+          ? `Detectadas: ${portasSeriais.map((p) => p.path).join(', ')}. Você pode digitar outra.`
+          : 'Nenhuma porta detectada agora — digite o nome mesmo assim se souber qual é.');
 
         const bauds = (infoSerial.baudRates || [9600, 115200]).map((b) => ({
           value: String(b), label: String(b)
         }));
-        add('Velocidade (baud)', select(bauds, String(c.baudRate || 9600), (v) => {
-          c.baudRate = Number(v);
-        }));
+        // Velocidade também é digitável: há equipamento com baud fora da tabela.
+        add('Velocidade (baud)', comboBox(bauds, String(c.baudRate || 9600), (v) => {
+          c.baudRate = Number(v) || 9600;
+        }, { placeholder: '9600' }));
       } else if (model.type === 'shell') {
         const shellOptions = [
           { value: '', label: '(shell padrão do sistema)' },
@@ -295,10 +294,12 @@ export async function sessionDialog(session, { folderId = null } = {}) {
           String(c.stopBits || 1), (v) => { c.stopBits = Number(v); }
         ));
         add('Paridade', select(PARIDADES, c.parity || 'none', (v) => { c.parity = v; }));
-        addFull(checkbox('Controle de fluxo por hardware (RTS/CTS)',
-          !!c.rtscts, (v) => { c.rtscts = v; }));
-        addFull(checkbox('Controle de fluxo por software (XON/XOFF)',
-          !!(c.xon && c.xoff), (v) => { c.xon = v; c.xoff = v; }));
+        const fluxoAtual = c.rtscts ? 'rtscts' : (c.xon || c.xoff) ? 'xonxoff' : 'none';
+        add('Controle de fluxo', select(CONTROLE_DE_FLUXO, fluxoAtual, (v) => {
+          c.rtscts = v === 'rtscts';
+          c.xon = v === 'xonxoff';
+          c.xoff = v === 'xonxoff';
+        }));
         add('Enter envia', select(FIM_DE_LINHA, c.newline || 'cr', (v) => { c.newline = v; }),
           'Mandar o fim de linha errado é a causa mais comum de "conecta mas não responde".');
         addFull(checkbox('Eco local (mostrar o que você digita)',
