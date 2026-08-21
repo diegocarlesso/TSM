@@ -79,29 +79,40 @@ async function create(sender, { sessionId, type, config: inlineConfig, secrets: 
   });
   live.set(id, { conn, meta, logId, sender });
 
+  // Transportes sincronos (o shell local) emitem `ready` — e ate dados — antes
+  // de `create()` retornar, ou seja, antes de o renderer saber o id da conexao.
+  // Esses eventos ficam numa fila e so saem depois da resposta do IPC; sem isso
+  // a aba ficava eternamente "conectando" com o terminal ja funcionando.
+  let liberado = false;
+  const fila = [];
+  const enviar = (canal, payload) => {
+    if (liberado) emit(sender, canal, payload);
+    else fila.push([canal, payload]);
+  };
+
   conn.on('data', (d) => {
     logger.write(id, d);
-    emit(sender, 'tsm:conn:data', { id, data: d });
+    enviar('tsm:conn:data', { id, data: d });
   });
-  conn.on('forwards', (list) => emit(sender, 'tsm:conn:forwards', { id, forwards: list }));
-  conn.on('status', (s) => emit(sender, 'tsm:conn:status', { id, status: s }));
-  conn.on('banner', (b) => emit(sender, 'tsm:conn:data', { id, data: b.replace(/\n/g, '\r\n') }));
+  conn.on('forwards', (list) => enviar('tsm:conn:forwards', { id, forwards: list }));
+  conn.on('status', (st) => enviar('tsm:conn:status', { id, status: st }));
+  conn.on('banner', (b) => enviar('tsm:conn:data', { id, data: b.replace(/\n/g, '\r\n') }));
   conn.on('ready', () => {
-    emit(sender, 'tsm:conn:ready', { id, meta });
+    enviar('tsm:conn:ready', { id, meta });
     if (sessionId) repo.sessions.touch(sessionId);
   });
   // `p.id` e o id do prompt, distinto do id da conexao — nao achatar num objeto so.
-  conn.on('prompt', (p) => emit(sender, 'tsm:conn:prompt', { id, prompt: p }));
-  conn.on('hostkey', (h) => emit(sender, 'tsm:conn:hostkey', { id, ...h }));
+  conn.on('prompt', (p) => enviar('tsm:conn:prompt', { id, prompt: p }));
+  conn.on('hostkey', (h) => enviar('tsm:conn:hostkey', { id, ...h }));
   conn.on('error', (err) => {
     repo.log.close(logId, 'error', err.message);
-    emit(sender, 'tsm:conn:error', { id, message: err.message });
+    enviar('tsm:conn:error', { id, message: err.message });
   });
   conn.on('close', (code) => {
     repo.log.close(logId, 'closed');
     logger.stop(id);
     live.delete(id);
-    emit(sender, 'tsm:conn:close', { id, code });
+    enviar('tsm:conn:close', { id, code });
   });
 
   // Gravacao automatica quando a sessao pede.
@@ -115,7 +126,7 @@ async function create(sender, { sessionId, type, config: inlineConfig, secrets: 
         meta: { name: meta.name, host: config.host, username: config.username, type: kind }
       });
     } catch (err) {
-      emit(sender, 'tsm:conn:error', { id, message: `Log da sessao: ${err.message}` });
+      enviar('tsm:conn:error', { id, message: `Log da sessao: ${err.message}` });
     }
   }
 
@@ -126,6 +137,15 @@ async function create(sender, { sessionId, type, config: inlineConfig, secrets: 
     live.delete(id);
     throw err;
   }
+
+  // `setImmediate` e um macrotask: roda depois de a resposta do IPC ter sido
+  // enviada, entao o renderer ja associou o id ao painel quando a fila esvazia.
+  setImmediate(() => {
+    liberado = true;
+    for (const [canal, payload] of fila) emit(sender, canal, payload);
+    fila.length = 0;
+  });
+
   return meta;
 }
 

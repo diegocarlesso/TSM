@@ -6,12 +6,13 @@ const BUILTIN_THEMES = [
     id: 'tsm-dark',
     name: 'TSM Dark',
     data: {
-      background: '#12161c', foreground: '#d6deeb', cursor: '#7ee787', cursorAccent: '#12161c',
-      selectionBackground: '#264f78',
-      black: '#1b1f27', red: '#ff6b6b', green: '#7ee787', yellow: '#ffd866',
-      blue: '#6cb6ff', magenta: '#d2a8ff', cyan: '#67e8f9', white: '#c9d1d9',
-      brightBlack: '#5c6773', brightRed: '#ff8787', brightGreen: '#95f6a1', brightYellow: '#ffe08a',
-      brightBlue: '#8cc8ff', brightMagenta: '#e2c4ff', brightCyan: '#9beefc', brightWhite: '#f0f6fc'
+      // Mesma familia do icone: fundo navy, ciano/lima como cores vivas.
+      background: '#0c1422', foreground: '#dce7f5', cursor: '#9ee62c', cursorAccent: '#0c1422',
+      selectionBackground: '#1d3a5c',
+      black: '#16202f', red: '#ff5f56', green: '#8ed81c', yellow: '#f0b429',
+      blue: '#0090f0', magenta: '#c792ea', cyan: '#29c48c', white: '#c9d6e5',
+      brightBlack: '#5b7192', brightRed: '#ff8a84', brightGreen: '#a8f018', brightYellow: '#ffd166',
+      brightBlue: '#4db8ff', brightMagenta: '#dcb4ff', brightCyan: '#5fe0b0', brightWhite: '#f2f7fd'
     }
   },
   {
@@ -121,7 +122,7 @@ const UI_THEMES = [
 
 const DEFAULT_SETTINGS = {
   'ui.theme': 'dark',
-  'ui.accent': '#4f9cf9',
+  'ui.accent': '#0090f0',
   'ui.sidebarWidth': 280,
   'ui.language': 'pt-BR',
   'terminal.theme': 'tsm-dark',

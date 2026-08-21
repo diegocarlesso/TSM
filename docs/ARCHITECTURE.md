@@ -26,7 +26,7 @@ O TSM é um aplicativo Electron com separação estrita entre os dois processos:
                                     ▼
 ┌────────────────────────────── renderer (Chromium) ────────────────────────────────┐
 │  app.js ────── orquestração, abas, atalhos, paleta, MultiExec                     │
-│  components/  state.js · tree.js · terminal.js · sftp.js                          │
+│  components/  state.js · tree.js · terminal.js · layout.js · sftp.js              │
 │               session-dialog.js · settings-dialog.js · tools-dialog.js · ui.js    │
 │  xterm.js + addons (fit, search, web-links, unicode11)                            │
 └───────────────────────────────────────────────────────────────────────────────────┘
@@ -176,6 +176,32 @@ economizaria em código.
   a classe `.active`, o que preserva o buffer e o scroll sem re-render.
 - **`tree.js`** — drag & drop com três zonas por linha (acima / dentro / abaixo). O drop
   recalcula a ordem dos irmãos e grava tudo numa transação.
+- **`layout.js`** — a árvore de painéis de cada aba.
+
+### Split: por que uma árvore e não layouts prontos
+
+Uma aba não é "um terminal": é uma árvore de `{kind:'leaf', paneId}` e
+`{kind:'split', dir, children:[a,b], sizes}`. Cada divisão tem exatamente dois filhos e
+tudo o mais sai do aninhamento — três painéis são duas divisões, quatro são três. É o
+modelo do tmux e do Windows Terminal, e custa menos código que uma tabela de layouts
+fixos, além de não ter teto.
+
+`state.panes` continua sendo a lista **plana** de terminais (cada um sabe sua aba), então
+todo o resto do renderer — status, MultiExec, SFTP, temas — não precisou saber que o split
+existe.
+
+Dois detalhes que carregam o peso:
+
+- **O DOM do terminal é reaproveitado, nunca recriado.** O renderizador recebe uma função
+  `mount(paneId)` que devolve o elemento existente. Reconstruir o `xterm` a cada split
+  perderia buffer e scroll.
+- **A reconstrução só acontece quando a *estrutura* muda**, comparada por
+  `layout.signature()`. Foco e status viram troca de classe. Sem isso, cada evento de
+  status arrancaria os terminais do documento — caro e visivelmente instável.
+
+O redimensionamento por divisória mexe só no `style.flex` durante o arraste, pela mesma
+razão, e grava as frações na árvore no `mouseup`. Cada painel tem um `ResizeObserver`, o
+que cobre resize de janela e arraste de divisória sem o layout precisar avisar ninguém.
 
 ---
 
@@ -194,6 +220,20 @@ economizaria em código.
 
 ---
 
+## Ordem de eventos na conexão
+
+Transportes assíncronos (SSH, Telnet) só emitem `ready` depois que a chamada IPC já
+respondeu. O **shell local não**: o `node-pty` sobe dentro de `connect()`, então `ready` e
+até os primeiros bytes saíam antes de o renderer saber o id da conexão — e a aba ficava
+presa em "conectando" com o terminal já funcionando.
+
+`manager.create()` enfileira todos os eventos e só os libera num `setImmediate` depois do
+`return`. Como `setImmediate` é macrotask, a resposta do IPC (microtask) chega primeiro, e
+o renderer já associou o id ao painel quando a fila esvazia. O teste de interface trava
+esse comportamento com uma verificação explícita de status.
+
+---
+
 ## Onde mexer
 
 | Quero… | Vá em |
@@ -203,5 +243,7 @@ economizaria em código.
 | Novo campo de sessão | `session-dialog.js` (UI) → grava em `config` (JSON); nada de DDL |
 | Novo importador | `src/main/importers/` devolvendo `{folders, sessions, warnings}` + registrar em `portability.js` |
 | Novo tema embutido | `src/shared/themes.js` |
+| Mudar o ícone ou a paleta | `assets/` + `:root` em `src/renderer/styles/app.css` |
+| Mexer no split | `src/renderer/components/layout.js` |
 | Gravar algo em lote | envolva em `repo.tx()` — veja a seção de transações |
 | Mudar onde os dados ficam | `src/main/paths.js` |

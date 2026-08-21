@@ -6,9 +6,13 @@ import { WebLinksAddon } from '@xterm/addon-web-links';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
 
 import { el, toast, notifyError, contextMenu, promptDialog, confirmDialog } from './ui.js';
-import { state, setting, emit, paneById, activePane } from './state.js';
+import {
+  state, setting, emit, paneById, activePane, tabById, activeTab
+} from './state.js';
+import * as layout from './layout.js';
 
 let paneSeq = 0;
+let tabSeq = 0;
 
 function themeData(themeId) {
   const t = state.themes.find((x) => x.id === themeId) || state.themes[0];
@@ -33,10 +37,18 @@ function terminalOptions(session) {
 }
 
 /**
- * Cria um painel (aba) e conecta.
+ * Cria um painel e conecta.
+ *
  * `spec`: { session } para sessao salva, ou { type, config, name } para ad-hoc.
+ * `placement`:
+ *   - `{}`                              -> abre numa aba nova;
+ *   - `{ splitFrom: paneId, dir, before }` -> divide o painel indicado.
+ *
+ * O elemento do painel NAO e inserido no DOM aqui: quem posiciona e o
+ * renderizador da arvore de layout, que reaproveita o mesmo elemento a cada
+ * mudanca (por isso o buffer e o scroll do terminal sobrevivem ao split).
  */
-export async function openPane(spec) {
+export async function openPane(spec, placement = {}) {
   const id = `pane-${++paneSeq}`;
   const session = spec.session || null;
   const type = spec.type || (session && session.type) || 'ssh';
@@ -45,7 +57,8 @@ export async function openPane(spec) {
   const host = el('div', { class: 'term-host' });
   const findBar = buildFindBar();
   const root = el('div', { class: 'pane', dataset: { paneId: id } }, [findBar.node, host]);
-  document.getElementById('panes').append(root);
+
+  const tab = attachToLayout(id, placement);
 
   const term = new Terminal(terminalOptions(session));
   const fit = new FitAddon();
@@ -57,31 +70,99 @@ export async function openPane(spec) {
   term.loadAddon(unicode);
   term.unicode.activeVersion = '11';
 
-  term.open(host);
   findBar.bind(search, term);
 
   const pane = {
-    id, root, host, term, fit, search, findBar,
+    id, tabId: tab.id, root, host, term, fit, search, findBar,
     session, type, name,
     connectionId: null,
     status: 'conectando',
     spec,
-    log: null,
+    opened: false,
     disposers: []
   };
   state.panes.push(pane);
+  state.activeTabId = tab.id;
+  tab.activePaneId = id;
   state.activePaneId = id;
 
   wireTerminal(pane);
-  emit('panes');
+  emit('panes');   // o app monta a arvore e insere `root` no DOM, sincronamente
 
+  // `term.open()` exige o host ja no documento — e `term.element` so existe
+  // depois dele, entao os handlers de DOM vem em seguida.
+  mountTerminal(pane);
   requestAnimationFrame(() => {
-    fit.fit();
+    fitPane(pane);
     term.focus();
   });
 
   await connectPane(pane);
   return pane;
+}
+
+/** Abre o terminal no DOM (idempotente) e liga o que depende de `term.element`. */
+function mountTerminal(pane) {
+  if (pane.opened || !pane.host.isConnected) return false;
+  pane.term.open(pane.host);
+  pane.opened = true;
+  wireTerminalDom(pane);
+  return true;
+}
+
+/** Encaixa o novo painel na arvore: aba nova ou divisao de um painel existente. */
+function attachToLayout(paneId, placement) {
+  if (placement.splitFrom) {
+    const source = paneById(placement.splitFrom);
+    const tab = source && tabById(source.tabId);
+    if (tab) {
+      tab.root = layout.splitLeaf(
+        tab.root, source.id, paneId,
+        placement.dir === 'col' ? 'col' : 'row',
+        !!placement.before
+      );
+      return tab;
+    }
+  }
+
+  const tab = {
+    id: `tab-${++tabSeq}`,
+    name: null,
+    root: layout.leaf(paneId),
+    activePaneId: paneId
+  };
+  state.tabs.push(tab);
+  return tab;
+}
+
+/** Divide o painel indicado abrindo outra instancia da mesma sessao. */
+export function splitPane(pane, dir) {
+  if (!pane) return Promise.resolve(null);
+  const spec = pane.session
+    ? { session: pane.session }
+    : { type: pane.type, config: pane.spec.config, name: pane.name };
+  return openPane(spec, { splitFrom: pane.id, dir });
+}
+
+export function fitPane(pane) {
+  if (!pane || !pane.opened) return;
+  const tab = tabById(pane.tabId);
+  if (!tab || tab.id !== state.activeTabId) return;   // aba oculta: sem dimensoes
+  try {
+    pane.fit.fit();
+  } catch { /* terminal ainda nao pintado */ }
+}
+
+/** Reajusta todos os terminais da aba visivel — chamado apos mudar o layout. */
+export function fitActiveTab() {
+  const tab = tabById(state.activeTabId);
+  if (!tab) return;
+  for (const paneId of layout.leafIds(tab.root)) {
+    const pane = paneById(paneId);
+    if (!pane) continue;
+    mountTerminal(pane);
+    fitPane(pane);
+  }
 }
 
 function buildFindBar() {
@@ -156,6 +237,17 @@ function wireTerminal(pane) {
     }
   });
 
+}
+
+/** Handlers que dependem de `term.element` — so existem apos `term.open()`. */
+function wireTerminalDom(pane) {
+  const { term } = pane;
+
+  // Clicar num painel do split passa o foco para ele.
+  term.element.addEventListener('mousedown', () => {
+    if (state.activePaneId !== pane.id) focusPane(pane.id);
+  }, true);
+
   // Botao direito: colar (padrao) ou menu, conforme preferencia.
   term.element.addEventListener('contextmenu', async (e) => {
     const mode = setting('terminal.rightClick', 'paste');
@@ -170,19 +262,20 @@ function wireTerminal(pane) {
       { label: 'Colar', key: 'Ctrl+Shift+V', onClick: () => pasteInto(pane) },
       { label: 'Selecionar tudo', onClick: () => term.selectAll() },
       { separator: true },
+      { label: 'Dividir a direita', key: 'Ctrl+Shift+→', onClick: () => splitPane(pane, 'row') },
+      { label: 'Dividir abaixo', key: 'Ctrl+Shift+↓', onClick: () => splitPane(pane, 'col') },
+      { separator: true },
       { label: 'Localizar…', key: 'Ctrl+F', onClick: () => pane.findBar.toggle(term) },
       { label: 'Limpar', key: 'Ctrl+K', onClick: () => term.clear() },
       { separator: true },
       { label: 'Reconectar', onClick: () => reconnectPane(pane) },
-      { label: 'Fechar aba', danger: true, onClick: () => closePane(pane.id) }
+      { label: 'Fechar painel', danger: true, onClick: () => closePane(pane.id) }
     ]);
   });
 
-  const ro = new ResizeObserver(() => {
-    if (pane.root.classList.contains('active')) {
-      try { pane.fit.fit(); } catch { /* terminal ainda nao pintado */ }
-    }
-  });
+  // O painel muda de tamanho por resize da janela OU por arraste de divisoria;
+  // o observer cobre os dois casos sem o layout precisar avisar ninguem.
+  const ro = new ResizeObserver(() => fitPane(pane));
   ro.observe(pane.host);
   pane.disposers.push(() => ro.disconnect());
 }
@@ -236,13 +329,13 @@ export async function reconnectPane(pane) {
   pane.term.focus();
 }
 
-export async function closePane(paneId) {
+export async function closePane(paneId, { skipConfirm = false } = {}) {
   const pane = paneById(paneId);
   if (!pane) return;
 
-  if (pane.status === 'conectado' && setting('connection.confirmClose', true)) {
+  if (!skipConfirm && pane.status === 'conectado' && setting('connection.confirmClose', true)) {
     const ok = await confirmDialog({
-      title: 'Fechar sessao',
+      title: 'Fechar painel',
       message: `Encerrar "${pane.name}"?`,
       detail: 'A conexao sera desfeita.',
       confirmLabel: 'Fechar',
@@ -251,6 +344,8 @@ export async function closePane(paneId) {
     if (!ok) return;
   }
 
+  const tab = tabById(pane.tabId);
+
   if (pane.connectionId) await window.tsm.conn.close(pane.connectionId).catch(() => {});
   for (const d of pane.disposers) d();
   pane.term.dispose();
@@ -258,22 +353,95 @@ export async function closePane(paneId) {
 
   state.panes = state.panes.filter((p) => p.id !== paneId);
   if (state.sftp.paneId === paneId) state.sftp.paneId = null;
-  if (state.activePaneId === paneId) {
-    state.activePaneId = state.panes.length ? state.panes[state.panes.length - 1].id : null;
+
+  if (tab) {
+    // Escolhe o proximo foco ANTES de mexer na arvore, para pegar um vizinho
+    // de verdade em vez de "o ultimo painel aberto em qualquer aba".
+    const siblings = layout.leafIds(tab.root).filter((id) => id !== paneId);
+    tab.root = layout.removeLeaf(tab.root, paneId);
+
+    if (!tab.root) {
+      state.tabs = state.tabs.filter((t) => t.id !== tab.id);
+      if (state.activeTabId === tab.id) {
+        const next = state.tabs[state.tabs.length - 1] || null;
+        state.activeTabId = next ? next.id : null;
+        state.activePaneId = next ? next.activePaneId : null;
+      }
+    } else if (tab.activePaneId === paneId) {
+      tab.activePaneId = siblings[siblings.length - 1] || null;
+      if (state.activeTabId === tab.id) state.activePaneId = tab.activePaneId;
+    }
   }
+
   emit('panes');
+  requestAnimationFrame(() => {
+    fitActiveTab();
+    const focused = paneById(state.activePaneId);
+    if (focused) focused.term.focus();
+  });
+}
+
+/** Fecha a aba inteira, com uma unica confirmacao para todos os paineis. */
+export async function closeTab(tabId) {
+  const tab = tabById(tabId);
+  if (!tab) return;
+  const ids = layout.leafIds(tab.root);
+  const conectados = ids.map(paneById).filter((p) => p && p.status === 'conectado');
+
+  if (conectados.length && setting('connection.confirmClose', true)) {
+    const ok = await confirmDialog({
+      title: 'Fechar aba',
+      message: ids.length > 1
+        ? `Encerrar os ${ids.length} paineis desta aba?`
+        : `Encerrar "${conectados[0].name}"?`,
+      detail: conectados.map((p) => `• ${p.name}`).join('\n'),
+      confirmLabel: 'Fechar',
+      danger: true
+    });
+    if (!ok) return;
+  }
+  for (const id of ids) await closePane(id, { skipConfirm: true });
 }
 
 export function focusPane(paneId) {
+  const pane = paneById(paneId);
+  if (!pane) return;
+  const tab = tabById(pane.tabId);
+  if (tab) {
+    state.activeTabId = tab.id;
+    tab.activePaneId = paneId;
+  }
   state.activePaneId = paneId;
   emit('panes');
-  const pane = paneById(paneId);
-  if (pane) {
-    requestAnimationFrame(() => {
-      try { pane.fit.fit(); } catch { /* noop */ }
-      pane.term.focus();
-    });
+  requestAnimationFrame(() => {
+    fitActiveTab();
+    pane.term.focus();
+  });
+}
+
+/** Foca uma aba inteira, voltando ao painel que estava em foco nela. */
+export function focusTab(tabId) {
+  const tab = tabById(tabId);
+  if (!tab) return;
+  state.activeTabId = tabId;
+  const target = paneById(tab.activePaneId) || paneById(layout.leafIds(tab.root)[0]);
+  if (target) {
+    state.activePaneId = target.id;
+    tab.activePaneId = target.id;
   }
+  emit('panes');
+  requestAnimationFrame(() => {
+    fitActiveTab();
+    if (target) target.term.focus();
+  });
+}
+
+/** Move o foco para o painel vizinho ('left'|'right'|'up'|'down'). */
+export function focusNeighbor(direction) {
+  const tab = activeTab();
+  if (!tab) return;
+  const next = layout.neighbor(tab.root, state.activePaneId, direction);
+  if (next) focusPane(next);
 }
 
 export function copySelection(pane) {

@@ -15,7 +15,11 @@ export const state = {
   filter: '',
   selectedNode: null,          // { kind:'folder'|'session', id }
   expanded: new Set(),
-  panes: [],                   // { id, connectionId, session, type, name, status, term, ... }
+  // Uma aba contem uma ARVORE de paineis (ver components/layout.js).
+  // `panes` continua sendo a lista plana de terminais; cada um sabe sua aba.
+  tabs: [],                    // { id, name, root, activePaneId }
+  activeTabId: null,
+  panes: [],                   // { id, tabId, connectionId, session, type, name, status, term, ... }
   activePaneId: null,
   sftp: { paneId: null, path: null, items: [], selected: new Set() },
   multiExec: false
@@ -85,6 +89,32 @@ export function paneById(id) {
 
 export function paneByConnection(connectionId) {
   return state.panes.find((p) => p.connectionId === connectionId) || null;
+}
+
+// ----------------------------------------------------------------- abas ---
+export function activeTab() {
+  return state.tabs.find((t) => t.id === state.activeTabId) || null;
+}
+
+export function tabById(id) {
+  return state.tabs.find((t) => t.id === id) || null;
+}
+
+export function tabOfPane(paneId) {
+  const pane = paneById(paneId);
+  return pane ? tabById(pane.tabId) : null;
+}
+
+/** Paineis de uma aba, na ordem visual da arvore. */
+export function panesOfTab(tabId) {
+  return state.panes.filter((p) => p.tabId === tabId);
+}
+
+/** O nome da aba e o do painel em foco — como no Windows Terminal. */
+export function tabTitle(tab) {
+  if (tab.name) return tab.name;
+  const focused = paneById(tab.activePaneId);
+  return focused ? focused.name : 'Sessao';
 }
 
 /** Constroi a arvore hierarquica a partir das listas planas. */

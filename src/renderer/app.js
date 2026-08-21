@@ -2,13 +2,15 @@
 import { el, $, $$, toast, guard, modal, contextMenu, confirmDialog, formatDate } from './components/ui.js';
 import {
   state, subscribe, emit, reloadTree, reloadSettings, reloadThemes, reloadVault,
-  reloadIdentities, setting, paneById, activePane
+  reloadIdentities, setting, paneById, activePane, activeTab, tabTitle
 } from './components/state.js';
 import { initTree, render as renderTree, newFolder } from './components/tree.js';
 import {
-  openPane, closePane, focusPane, reconnectPane, bindConnectionEvents,
-  refreshAppearance, adjustFontSize, copySelection, pasteInto, broadcast
+  openPane, closePane, closeTab, focusPane, focusTab, focusNeighbor, splitPane,
+  reconnectPane, bindConnectionEvents, refreshAppearance, adjustFontSize,
+  copySelection, pasteInto, broadcast, fitActiveTab
 } from './components/terminal.js';
+import * as layout from './components/layout.js';
 import * as sftpPanel from './components/sftp.js';
 import { sessionDialog, quickConnectDialog } from './components/session-dialog.js';
 import {
@@ -28,7 +30,7 @@ async function boot() {
   await reloadTree();
 
   applyUiTheme(setting('ui.theme', 'dark'));
-  document.documentElement.style.setProperty('--accent', setting('ui.accent', '#4f9cf9'));
+  document.documentElement.style.setProperty('--accent', setting('ui.accent', '#0090f0'));
   document.documentElement.style.setProperty('--sidebar-w', `${setting('ui.sidebarWidth', 280)}px`);
 
   bindConnectionEvents();
@@ -206,8 +208,7 @@ function initSplitter() {
     document.body.style.cursor = '';
     const w = Number.parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w'), 10);
     window.tsm.settings.set('ui.sidebarWidth', w);
-    const pane = activePane();
-    if (pane) setTimeout(() => pane.fit.fit(), 60);
+    setTimeout(fitActiveTab, 60);
   });
 }
 
@@ -216,48 +217,105 @@ function renderTabs() {
   const bar = $('#tabs');
   bar.replaceChildren();
 
-  for (const pane of state.panes) {
-    const active = pane.id === state.activePaneId;
-    pane.root.classList.toggle('active', active);
+  for (const tab of state.tabs) {
+    const active = tab.id === state.activeTabId;
+    const panes = layout.leafIds(tab.root).map(paneById).filter(Boolean);
+    const focused = paneById(tab.activePaneId) || panes[0];
+    if (!focused) continue;
 
-    const stateClass = pane.status === 'conectado' ? 'ok' : pane.status === 'erro' ? 'err' : '';
-    const tab = el('div', {
+    const worst = panes.some((p) => p.status === 'erro') ? 'err'
+      : panes.every((p) => p.status === 'conectado') ? 'ok' : '';
+
+    const node = el('div', {
       class: `tab${active ? ' active' : ''}`,
-      title: `${pane.name}${pane.target ? ` — ${pane.target}` : ''} (${pane.status})`,
-      onClick: () => focusPane(pane.id),
-      onAuxclick: (e) => { if (e.button === 1) closePane(pane.id); },
-      onContextmenu: (e) => tabMenu(e, pane)
+      title: panes.map((p) => `${p.name}${p.target ? ` — ${p.target}` : ''} (${p.status})`).join('\n'),
+      onClick: () => focusTab(tab.id),
+      onAuxclick: (e) => { if (e.button === 1) closeTab(tab.id); },
+      onContextmenu: (e) => tabMenu(e, tab, focused)
     }, [
-      el('span', { class: `tab-state ${stateClass}` }),
-      el('span', { class: 'tab-name', text: pane.name }),
+      el('span', { class: `tab-state ${worst}` }),
+      el('span', { class: 'tab-name', text: tabTitle(tab) }),
+      panes.length > 1 ? el('span', { class: 'tab-count', text: String(panes.length) }) : null,
       el('span', {
         class: 'tab-close icon-btn', text: '✕',
-        onClick: (e) => { e.stopPropagation(); closePane(pane.id); }
+        onClick: (e) => { e.stopPropagation(); closeTab(tab.id); }
       })
     ]);
-    if (pane.session && pane.session.color) tab.style.borderBottom = `2px solid ${pane.session.color}`;
-    bar.append(tab);
+    if (focused.session && focused.session.color) {
+      node.style.borderBottom = `2px solid ${focused.session.color}`;
+    }
+    bar.append(node);
   }
+
+  renderWorkspace();
 
   const pane = activePane();
   $('#status-right').textContent = pane
     ? `${pane.type.toUpperCase()} · ${pane.target || ''} · ${pane.statusText || pane.status}`
     : '';
 
-  if (!state.panes.length) showWelcome();
+  if (!state.tabs.length) showWelcome();
   else hideWelcome();
 }
 
-function tabMenu(e, pane) {
+/**
+ * Monta a arvore de layout de cada aba dentro de `#panes`.
+ *
+ * A reconstrucao acontece so quando a ESTRUTURA muda (assinatura da arvore).
+ * Foco e status sao aplicados por classe, sem tocar no DOM dos terminais —
+ * reanexar um elemento do xterm a cada evento seria caro e piscaria a tela.
+ */
+function renderWorkspace() {
+  const container = $('#panes');
+  const alive = new Set();
+
+  for (const tab of state.tabs) {
+    alive.add(tab.id);
+    let view = container.querySelector(`.tab-view[data-tab-id="${tab.id}"]`);
+    if (!view) {
+      view = el('div', { class: 'tab-view', dataset: { tabId: tab.id } });
+      container.append(view);
+    }
+
+    const sig = layout.signature(tab.root);
+    if (view.dataset.sig !== sig) {
+      layout.renderTree(view, tab.root, {
+        mount: (paneId) => {
+          const p = paneById(paneId);
+          return p ? p.root : null;
+        },
+        activePaneId: tab.activePaneId,
+        onResize: () => fitActiveTab()
+      });
+      view.dataset.sig = sig;
+      if (tab.id === state.activeTabId) requestAnimationFrame(fitActiveTab);
+    }
+
+    view.classList.toggle('active', tab.id === state.activeTabId);
+    const showFocus = tab.id === state.activeTabId && layout.countLeaves(tab.root) > 1;
+    for (const leafEl of view.querySelectorAll('.leaf')) {
+      leafEl.classList.toggle('focused', showFocus && leafEl.dataset.paneId === tab.activePaneId);
+    }
+  }
+
+  for (const view of [...container.children]) {
+    if (!alive.has(view.dataset.tabId)) view.remove();
+  }
+}
+
+function tabMenu(e, tab, pane) {
   contextMenu(e, [
-    { label: 'Reconectar', key: 'Ctrl+R', onClick: () => reconnectPane(pane) },
-    { label: 'Duplicar', key: 'Ctrl+D', onClick: () => duplicatePane(pane) },
+    { label: 'Dividir a direita', key: 'Ctrl+Shift+Seta direita', onClick: () => splitPane(pane, 'row') },
+    { label: 'Dividir abaixo', key: 'Ctrl+Shift+Seta abaixo', onClick: () => splitPane(pane, 'col') },
+    { separator: true },
+    { label: 'Reconectar painel', key: 'Ctrl+R', onClick: () => reconnectPane(pane) },
+    { label: 'Duplicar em nova aba', key: 'Ctrl+D', onClick: () => duplicatePane(pane) },
     {
       label: 'Renomear aba…',
       onClick: async () => {
         const { promptDialog } = await import('./components/ui.js');
-        const name = await promptDialog({ title: 'Renomear aba', label: 'Nome', value: pane.name });
-        if (name) { pane.name = name; emit('panes'); }
+        const name = await promptDialog({ title: 'Renomear aba', label: 'Nome', value: tabTitle(tab) });
+        if (name !== undefined) { tab.name = name || null; emit('panes'); }
       }
     },
     { separator: true },
@@ -279,8 +337,14 @@ function tabMenu(e, pane) {
     { label: 'Gravar sessao em arquivo…', onClick: () => sessionLogDialog(pane) },
     { label: 'Biblioteca de comandos…', key: 'Ctrl+Shift+S', onClick: () => openSnippets() },
     { separator: true },
-    { label: 'Fechar as outras', onClick: () => closeOthers(pane.id) },
-    { label: 'Fechar aba', danger: true, key: 'Ctrl+W', onClick: () => closePane(pane.id) }
+    {
+      label: 'Fechar painel',
+      key: 'Ctrl+Shift+W',
+      hidden: layout.countLeaves(tab.root) < 2,
+      onClick: () => closePane(pane.id)
+    },
+    { label: 'Fechar as outras abas', onClick: () => closeOtherTabs(tab.id) },
+    { label: 'Fechar aba', danger: true, key: 'Ctrl+W', onClick: () => closeTab(tab.id) }
   ]);
 }
 
@@ -289,9 +353,9 @@ async function duplicatePane(pane) {
   else await openPane({ type: pane.type, config: pane.spec.config, name: pane.name });
 }
 
-async function closeOthers(keepId) {
-  for (const p of [...state.panes]) {
-    if (p.id !== keepId) await closePane(p.id);
+async function closeOtherTabs(keepId) {
+  for (const t of [...state.tabs]) {
+    if (t.id !== keepId) await closeTab(t.id);
   }
 }
 
@@ -434,28 +498,49 @@ async function commandPalette() {
 function bindShortcuts() {
   window.addEventListener('keydown', (e) => {
     const ctrl = e.ctrlKey || e.metaKey;
+
+    // Alt + setas navega entre os paineis da aba — sem Ctrl, para nao brigar
+    // com o Alt+seta de historico de alguns shells.
+    if (e.altKey && !ctrl && !e.shiftKey) {
+      const dirs = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down' };
+      if (dirs[e.key]) {
+        e.preventDefault();
+        focusNeighbor(dirs[e.key]);
+        return;
+      }
+    }
+
     if (!ctrl) return;
 
-    // Ctrl+1..9 vai direto para a aba
+    // Ctrl+1..9 vai direto para a aba N.
     if (!e.shiftKey && /^[1-9]$/.test(e.key)) {
       const idx = Number(e.key) - 1;
-      if (state.panes[idx]) { e.preventDefault(); focusPane(state.panes[idx].id); }
+      if (state.tabs[idx]) { e.preventDefault(); focusTab(state.tabs[idx].id); }
       return;
     }
 
     const key = e.key.toLowerCase();
     const pane = activePane();
+    const tab = activeTab();
+
+    // Divisao do painel em foco.
+    if (e.shiftKey && e.key === 'ArrowRight') { e.preventDefault(); splitPane(pane, 'row'); return; }
+    if (e.shiftKey && e.key === 'ArrowDown') { e.preventDefault(); splitPane(pane, 'col'); return; }
+
+    if (e.shiftKey && key === 'w') { e.preventDefault(); if (pane) closePane(pane.id); return; }
+    if (!e.shiftKey && key === 'w') { e.preventDefault(); if (tab) closeTab(tab.id); return; }
 
     if (e.shiftKey && key === 'm') { e.preventDefault(); toggleMultiExec(); return; }
     if (e.shiftKey && key === 's') { e.preventDefault(); openSnippets(); return; }
+
     if (key === 'tab') {
       e.preventDefault();
-      if (!state.panes.length) return;
-      const i = state.panes.findIndex((p) => p.id === state.activePaneId);
+      if (!state.tabs.length) return;
+      const i = state.tabs.findIndex((t) => t.id === state.activeTabId);
       const next = e.shiftKey
-        ? (i - 1 + state.panes.length) % state.panes.length
-        : (i + 1) % state.panes.length;
-      focusPane(state.panes[next].id);
+        ? (i - 1 + state.tabs.length) % state.tabs.length
+        : (i + 1) % state.tabs.length;
+      focusTab(state.tabs[next].id);
       return;
     }
     if (key === 'f' && !e.shiftKey && pane) { e.preventDefault(); pane.findBar.toggle(pane.term); return; }
@@ -466,8 +551,7 @@ function bindShortcuts() {
 
 function toggleSidebar() {
   $('#sidebar').classList.toggle('collapsed');
-  const pane = activePane();
-  if (pane) setTimeout(() => pane.fit.fit(), 60);
+  setTimeout(fitActiveTab, 60);
 }
 
 // ---------------------------------------------------- comandos do menu ----
@@ -479,7 +563,10 @@ function bindMenu() {
       case 'quickconnect': return quickConnect();
       case 'folder:new': return newFolder(currentFolderId());
       case 'shell:new': return shellMenuOrDefault();
-      case 'tab:close': return pane && closePane(pane.id);
+      case 'tab:close': return activeTab() && closeTab(activeTab().id);
+      case 'pane:close': return pane && closePane(pane.id);
+      case 'split:right': return splitPane(pane, 'row');
+      case 'split:down': return splitPane(pane, 'col');
       case 'tab:duplicate': return pane && duplicatePane(pane);
       case 'tab:reconnect': return pane && reconnectPane(pane);
       case 'term:copy': return pane && copySelection(pane);
@@ -536,12 +623,7 @@ function renderVaultBadge() {
 }
 
 // Recalcula os terminais quando a janela muda de tamanho.
-window.addEventListener('resize', () => {
-  const pane = activePane();
-  if (pane) {
-    try { pane.fit.fit(); } catch { /* noop */ }
-  }
-});
+window.addEventListener('resize', () => fitActiveTab());
 
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
   if (setting('ui.theme', 'dark') === 'system') applyUiTheme('system');

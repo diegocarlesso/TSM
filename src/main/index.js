@@ -16,6 +16,7 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 let mainWindow = null;
+let smokeExitCode = 0;
 
 function seed() {
   repo.tx(() => {
@@ -42,9 +43,9 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     ...bounds,
     show: false,
-    backgroundColor: '#12161c',
+    backgroundColor: '#0c1422',   // igual ao --bg-1, evita flash branco ao abrir
     title: 'Total Session Manager',
-    icon: path.join(__dirname, '../../build/icon.png'),
+    icon: path.join(__dirname, '../../assets/icon-512.png'),
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
@@ -63,9 +64,14 @@ function createWindow() {
 
   const persistBounds = () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
-    repo.settings.set('window.maximized', mainWindow.isMaximized());
-    if (!mainWindow.isMaximized() && !mainWindow.isFullScreen()) {
-      repo.settings.set('window.bounds', mainWindow.getNormalBounds());
+    try {
+      repo.settings.set('window.maximized', mainWindow.isMaximized());
+      if (!mainWindow.isMaximized() && !mainWindow.isFullScreen()) {
+        repo.settings.set('window.bounds', mainWindow.getNormalBounds());
+      }
+    } catch (err) {
+      // Salvar a geometria nunca pode impedir a janela de fechar.
+      console.error('[TSM] nao foi possivel salvar a geometria:', err.message);
     }
   };
   mainWindow.on('resize', debounce(persistBounds, 400));
@@ -97,15 +103,48 @@ function createWindow() {
       console.error('[renderer] processo caiu:', details));
   }
 
-  // TSM_SMOKE=1 abre, espera a interface montar e sai — usado no teste de fumaca.
-  if (process.env.TSM_SMOKE) {
+  // Ganchos de teste, ativados so por variavel de ambiente:
+  //   TSM_SMOKE=1              -> abre, confere que a interface montou e sai;
+  //   TSM_UITEST=<arquivo.js>  -> alem disso, roda um roteiro no renderer.
+  // O roteiro dirige a interface por eventos de DOM reais, entao nao existe
+  // nenhuma porta de teste exposta no codigo de producao.
+  if (process.env.TSM_SMOKE || process.env.TSM_UITEST) {
     mainWindow.webContents.once('did-finish-load', () => {
       setTimeout(async () => {
-        const ok = await mainWindow.webContents.executeJavaScript(
+        let ok = await mainWindow.webContents.executeJavaScript(
           'Boolean(document.querySelector("#tree") && window.tsm && !document.querySelector("body > pre"))'
         );
         console.log(ok ? '[smoke-ui] interface montou' : '[smoke-ui] FALHA ao montar a interface');
-        app.exit(ok ? 0 : 1);
+
+        if (ok && process.env.TSM_UITEST) {
+          try {
+            const roteiro = require('node:fs').readFileSync(process.env.TSM_UITEST, 'utf8');
+            const res = await mainWindow.webContents.executeJavaScript(roteiro, true);
+            for (const linha of res.log) console.log(linha);
+            ok = res.ok;
+          } catch (err) {
+            console.error('[uitest] roteiro falhou:', err.message);
+            ok = false;
+          }
+        }
+
+        // TSM_SHOT=<arquivo.png> salva uma captura da janela — util para
+        // conferir a aparencia sem depender de alguem olhar a tela.
+        if (process.env.TSM_SHOT) {
+          try {
+            const img = await mainWindow.webContents.capturePage();
+            require('node:fs').writeFileSync(process.env.TSM_SHOT, img.toPNG());
+            console.log(`[shot] ${process.env.TSM_SHOT}`);
+          } catch (err) {
+            console.error('[shot] falhou:', err.message);
+          }
+        }
+
+        smokeExitCode = ok ? 0 : 1;
+        // `quit` (e nao `exit`) para passar pelo `before-quit`: fechar conexoes
+        // e o banco. `app.exit` deixaria processos filhos orfaos no Windows.
+        app.quit();
+        setTimeout(() => app.exit(smokeExitCode), 4000).unref();
       }, 2500);
     });
   }
@@ -162,9 +201,23 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
+// A ordem aqui importa: `before-quit` roda ANTES de as janelas fecharem, e o
+// handler de `close` ainda grava as dimensoes da janela no banco. Fechar o banco
+// aqui fazia essa gravacao estourar e o encerramento travar. Conexoes podem
+// cair cedo; o banco so fecha em `will-quit`, com todas as janelas ja fechadas.
+let shuttingDown = false;
 app.on('before-quit', () => {
+  if (shuttingDown) return;
+  shuttingDown = true;
   manager.closeAll();
+});
+
+app.on('will-quit', () => {
   db.close();
+});
+
+app.on('quit', () => {
+  if (process.env.TSM_SMOKE) process.exitCode = smokeExitCode;
 });
 
 process.on('uncaughtException', (err) => {

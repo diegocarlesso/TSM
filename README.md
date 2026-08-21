@@ -25,6 +25,14 @@ reutiliza, modifica nem contorna nada do produto da Mobatek.
 - **Algoritmos legados** opcionais por sessão, para equipamentos antigos que ainda falam
   `diffie-hellman-group1-sha1` e afins.
 
+### Abas e painéis
+- **Split de painéis dentro da aba**: divida à direita ou abaixo quantas vezes quiser —
+  o layout é uma árvore aninhada (como tmux e Windows Terminal), não um conjunto de
+  layouts prontos. Divisórias arrastáveis, foco destacado e navegação com `Alt`+setas.
+- Fechar um painel desfaz a divisão sozinho; fechar a aba encerra todos de uma vez, com
+  uma confirmação só.
+- Dividir **não recria** o terminal já aberto: o buffer e o scroll continuam intactos.
+
 ### Organização
 - Árvore de **pastas aninhadas** com drag & drop, cores, contagem e busca incremental.
 - Etiquetas, notas por sessão, cor de aba, histórico de uso e "sessões recentes".
@@ -129,7 +137,7 @@ O que sai em `dist/`:
 | Plataforma | Artefato | Como usar |
 |---|---|---|
 | Windows | `win-unpacked/` | Pasta pronta com `Total Session Manager.exe` e os arquivos de apoio. Copie a pasta inteira e execute. |
-| Windows | `TSM-1.0.0-portable-x64.exe` | Executável único que se auto-extrai e roda. |
+| Windows | `TSM-1.0.0-portable-x64.exe` | **Executável único (~86 MB)**, no estilo do MobaXterm Portable: um arquivo, sem instalação. |
 | Linux | `TSM-1.0.0-x64.AppImage` | Um arquivo só: `chmod +x` e execute. |
 | Linux | `linux-unpacked/`, `.tar.gz` | Pasta com o binário e as bibliotecas. |
 | macOS | `mac/Total Session Manager.app` | Arraste para onde quiser e abra. |
@@ -202,6 +210,9 @@ listadas nos avisos, não silenciosamente descartadas.
 | `Ctrl+P` | Buscar sessão (paleta) |
 | `Ctrl+W` / `Ctrl+D` / `Ctrl+R` | Fechar / duplicar / reconectar aba |
 | `Ctrl+Tab` / `Ctrl+1..9` | Navegar entre abas |
+| `Ctrl+Shift+→` / `Ctrl+Shift+↓` | Dividir o painel à direita / abaixo |
+| `Alt+←` `Alt+→` `Alt+↑` `Alt+↓` | Mover o foco entre painéis |
+| `Ctrl+Shift+W` | Fechar só o painel em foco |
 | `Ctrl+Shift+C` / `Ctrl+Shift+V` | Copiar / colar no terminal |
 | `Ctrl+F` / `Ctrl+K` | Localizar / limpar terminal |
 | `Ctrl+B` / `Ctrl+Shift+E` | Barra lateral / painel de arquivos |
@@ -215,20 +226,52 @@ listadas nos avisos, não silenciosamente descartadas.
 
 Veja [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+## Aparência
+
+A identidade visual sai de `assets/icon.png`: a paleta da interface (azul `#0090f0` → lima
+`#a8f018`, sobre o navy `#003060` dessaturado) e o tema de terminal padrão são derivados
+dele, e o mesmo arquivo vira o ícone da janela, do executável e da tela inicial.
+
+`assets/` é a fonte da verdade — trocar o `icon.png` e o `app.ico` ali é o suficiente:
+
+```bash
+npm run build:renderer
+```
+
+O script copia o ícone para junto do bundle (a CSP exige mesma origem) e regenera nada
+mais. Os tamanhos auxiliares (`icon-512.png` e companhia) existem porque o macOS não gera
+`.icns` a partir de imagem menor que 512×512.
+
+Isso tudo é o **padrão** — o usuário continua podendo trocar tema, cor de destaque e fonte
+em *Configurações → Aparência*, e essas escolhas nunca são sobrescritas.
+
 ## Testes
 
 ```bash
 node scripts/smoke.js
 ```
 
-Exercita banco, migrações, cofre, importadores, export/import, negociação Telnet, gravação
-de sessão e geração de chaves — 43 verificações, sem abrir a interface. Inclui um teto de
-tempo para a inserção em lote, que já pegou uma regressão real de desempenho.
-
-Para validar que a janela sobe de verdade:
+43 verificações do processo principal em ~7 s, sem abrir a interface: banco, migrações,
+cofre, importadores, export/import, negociação Telnet, gravação de sessão e geração de
+chaves. Inclui um teto de tempo na inserção em lote, que já pegou uma regressão real de
+desempenho.
 
 ```bash
-TSM_SMOKE=1 npx electron .
+TSM_SMOKE=1 TSM_UITEST=scripts/uitest-split.js npx electron .
+```
+
+22 verificações na interface de verdade — abre a janela e dirige tudo por clique e teclado
+(nenhuma porta de teste no código de produção): identidade visual, split, divisórias
+arrastáveis, navegação entre painéis e fechamento.
+
+Para gerar um banco de demonstração e uma captura de tela:
+
+```bash
+TSM_DATA_DIR=./demo node scripts/seed-demo.js
+```
+
+```bash
+TSM_SMOKE=1 TSM_UITEST=scripts/uitest-shot.js TSM_SHOT=tela.png TSM_DATA_DIR=./demo npx electron .
 ```
 
 ## Licença

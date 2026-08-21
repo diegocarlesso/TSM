@@ -9,6 +9,7 @@ directories:
 files:
   - src/**/*
   - "!src/renderer/app.bundle.js.map"
+  - assets/**/*
   - package.json
 
 asarUnpack:
@@ -21,6 +22,7 @@ asarUnpack:
 # `portable` -> um unico .exe que se auto-extrai e roda
 # `AppImage` -> um unico arquivo executavel no Linux
 win:
+  icon: assets/app.ico
   target:
     - target: dir
       arch: [x64, arm64]
@@ -35,6 +37,7 @@ portable:
   requestExecutionLevel: user
 
 linux:
+  icon: assets/icon-512.png
   target:
     - target: dir
       arch: [x64, arm64]
@@ -48,6 +51,7 @@ linux:
   artifactName: TSM-${version}-${arch}.${ext}
 
 mac:
+  icon: assets/icon-512.png
   target:
     - target: dir
       arch: [x64, arm64]

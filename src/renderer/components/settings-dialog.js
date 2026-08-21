@@ -65,7 +65,7 @@ export async function settingsDialog(initialTab = 'aparencia') {
         (v) => commit('ui.theme', v)
       ));
       add('Cor de destaque', el('input', {
-        type: 'color', value: draft['ui.accent'] || '#4f9cf9',
+        type: 'color', value: draft['ui.accent'] || '#0090f0',
         onInput: (e) => commit('ui.accent', e.target.value)
       }));
       add('Tema do terminal', el('div', { class: 'inline' }, [
@@ -735,12 +735,15 @@ export async function aboutDialog() {
     title: 'Sobre o Total Session Manager',
     width: 460,
     render: () => el('div', {}, [
+      el('img', { class: 'about-logo', src: 'vendor/icon.png', alt: '' }),
       el('h2', { text: 'Total Session Manager', style: 'margin:0 0 4px' }),
       el('p', { class: 'muted', text: `Versao ${i.version || '?'} · Electron ${i.electron} · Node ${i.node}` }),
       el('p', { text: 'Gerenciador de sessoes SSH, Telnet, Shell local e SFTP/SCP. Sem limite de sessoes salvas.' }),
       el('p', { class: 'muted', text: `Plataforma: ${i.platform}/${i.arch}` }),
       el('p', { class: 'muted', text: `PTY local: ${i.hasPty ? 'disponivel' : 'indisponivel (modo pipe)'}` }),
-      el('p', { class: 'muted', style: 'font-size:11px;word-break:break-all', text: `Banco: ${i.dbPath || ''}` })
+      el('p', { class: 'muted', text: `Modo: ${i.portable ? 'portatil (dados ao lado do executavel)' : 'perfil do usuario'}` }),
+      el('p', { class: 'muted', text: `SQLite: ${i.sqliteEngine || '?'}` }),
+      el('p', { class: 'muted', style: 'font-size:11px;word-break:break-all', text: `Dados: ${i.dataDir || ''}` })
     ]),
     footer: (api) => [el('button', { class: 'primary', text: 'Fechar', onClick: () => api.close(true) })]
   });

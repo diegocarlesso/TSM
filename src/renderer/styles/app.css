@@ -1,18 +1,25 @@
 /* ---------------------------------------------------------------- base -- */
+/*
+ * Paleta derivada de assets/icon.png: azul #0090f0 -> lima #a8f018, com o
+ * navy #003060 do lado escuro do simbolo. Os fundos sao esse navy dessaturado,
+ * para a interface parecer o icone sem virar um borrao azul.
+ */
 :root {
-  --accent: #4f9cf9;
-  --bg-0: #0d1117;
-  --bg-1: #12161c;
-  --bg-2: #171c24;
-  --bg-3: #1e242e;
-  --bg-hover: #232a35;
-  --border: #262d38;
-  --text: #d6deeb;
-  --text-dim: #8b97a8;
-  --text-mute: #5c6674;
-  --ok: #3fb950;
-  --warn: #d29922;
-  --err: #f85149;
+  --accent: #0090f0;
+  --accent-2: #9ee62c;
+  --brand-grad: linear-gradient(120deg, #0090f0 0%, #29c48c 55%, #a8f018 100%);
+  --bg-0: #080e17;
+  --bg-1: #0c1422;
+  --bg-2: #111b2c;
+  --bg-3: #172439;
+  --bg-hover: #1d2c44;
+  --border: #23334c;
+  --text: #dce7f5;
+  --text-dim: #8ba2c0;
+  --text-mute: #5b7192;
+  --ok: #8ed81c;
+  --warn: #f0b429;
+  --err: #ff5f56;
   --radius: 6px;
   --sidebar-w: 280px;
   --font-ui: "Segoe UI", Inter, -apple-system, BlinkMacSystemFont, Ubuntu, "Helvetica Neue", sans-serif;
@@ -21,14 +28,15 @@
 
 body.theme-light {
   --bg-0: #ffffff;
-  --bg-1: #f6f8fa;
+  --bg-1: #f4f8fc;
   --bg-2: #ffffff;
-  --bg-3: #eef1f5;
-  --bg-hover: #e6ebf1;
-  --border: #d5dbe3;
-  --text: #1f2937;
-  --text-dim: #5b6674;
-  --text-mute: #8b97a8;
+  --bg-3: #e9f0f8;
+  --bg-hover: #dceaf7;
+  --border: #cbd9e8;
+  --text: #10243a;
+  --text-dim: #4c6180;
+  --text-mute: #7e93ac;
+  --ok: #4f9c10;
 }
 
 * { box-sizing: border-box; }
@@ -75,12 +83,18 @@ button, input, select, textarea {
   border-bottom: 1px solid var(--border);
 }
 
-.brand { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.brand { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.brand-logo { width: 22px; height: 22px; flex: none; }
+.brand-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
 .brand-mark {
   font-weight: 700;
   letter-spacing: 1px;
-  color: var(--accent);
   font-size: 15px;
+  /* O mesmo gradiente do simbolo, recortado no texto. */
+  background: var(--brand-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 .brand-sub { font-size: 11px; color: var(--text-mute); }
 
@@ -215,8 +229,6 @@ button, input, select, textarea {
 .workspace { flex: 1; position: relative; min-height: 0; }
 .panes { position: absolute; inset: 0; }
 
-.pane { position: absolute; inset: 0; display: none; flex-direction: column; }
-.pane.active { display: flex; }
 .pane .term-host { flex: 1; min-height: 0; padding: 4px 0 0 6px; }
 
 .pane-banner {
@@ -450,3 +462,85 @@ table.grid tbody tr:hover { background: var(--bg-hover); }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--bg-hover); border-radius: 5px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border); }
+
+/* ---------------------------------------------- split de paineis na aba -- */
+/* Uma view por aba; so a ativa aparece. Manter as inativas no DOM preserva o
+   buffer e o scroll dos terminais que estao em segundo plano. */
+.tab-view { position: absolute; inset: 0; display: none; }
+.tab-view.active { display: flex; }
+.tab-view > * { flex: 1; min-width: 0; min-height: 0; }
+
+.split { display: flex; min-width: 0; min-height: 0; }
+.split.row { flex-direction: row; }
+.split.col { flex-direction: column; }
+
+.leaf {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+/* A borda de foco so aparece quando ha mais de um painel — numa aba simples
+   ela seria ruido puro. */
+.leaf.focused::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--accent);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* O painel deixa de ser posicionado por `inset` e passa a preencher a folha. */
+.pane {
+  position: relative;
+  display: flex;
+  flex-direction: column;   /* barra de busca em cima, terminal embaixo */
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.split-handle {
+  flex: 0 0 5px;
+  background: transparent;
+  position: relative;
+  z-index: 3;
+}
+.split-handle.row { cursor: col-resize; }
+.split-handle.col { cursor: row-resize; }
+.split-handle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  transition: background .12s;
+}
+.split-handle.row::after { left: 2px; right: 2px; }
+.split-handle.col::after { top: 2px; bottom: 2px; }
+.split-handle:hover::after { background: var(--accent); }
+
+.tab-count {
+  flex: none;
+  font-size: 10px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: var(--bg-3);
+  color: var(--text-dim);
+}
+
+/* ------------------------------------------------------------- marca ----- */
+.welcome-logo {
+  width: 108px;
+  height: 108px;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 6px 22px rgba(0, 144, 240, .28));
+}
+.welcome h1 {
+  background: var(--brand-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.about-logo { width: 72px; height: 72px; float: left; margin: 0 14px 8px 0; }
