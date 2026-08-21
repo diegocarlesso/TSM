@@ -4,7 +4,7 @@ import { el, $, contextMenu, confirmDialog, promptDialog, guard, toast } from '.
 import { state, buildTree, reloadTree, emit } from './state.js';
 
 const TYPE_GLYPH = {
-  ssh: '🖧', telnet: '⌨', shell: '▣', sftp: '🗎', serial: '⇄'
+  ssh: '🖧', telnet: '⌨', shell: '▣', sftp: '🗎', serial: '⬌'
 };
 
 const TYPE_LABEL = {
@@ -123,6 +123,7 @@ function describe(node) {
 
 function shortTarget(s) {
   const c = s.config || {};
+  if (s.type === 'serial') return c.path ? `${c.path} @ ${c.baudRate || 9600}` : 'serial';
   if (s.type === 'shell') return c.shellPath ? c.shellPath.split(/[\\/]/).pop() : 'local';
   if (!c.host) return '';
   const user = c.username ? `${c.username}@` : '';
@@ -304,7 +305,7 @@ function sessionMenu(e, session) {
     },
     {
       label: 'Abrir navegador de arquivos',
-      hidden: session.type === 'telnet' || session.type === 'shell',
+      hidden: !['ssh', 'sftp'].includes(session.type),
       onClick: () => handlers.onOpenSftp(session)
     },
     { separator: true },

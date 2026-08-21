@@ -53,7 +53,7 @@ export async function show(paneId) {
   const pane = paneById(paneId || state.activePaneId);
   if (!pane) return toast('Abra uma sessao primeiro', 'warn');
   if (!pane.connectionId) return toast('A sessao nao esta conectada', 'warn');
-  if (pane.type === 'telnet' || pane.type === 'shell') {
+  if (!['ssh', 'sftp'].includes(pane.type)) {
     return toast('Transferencia de arquivos so em sessoes SSH/SFTP', 'warn');
   }
 

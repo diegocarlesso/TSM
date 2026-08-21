@@ -12,6 +12,7 @@ const sftp = require('./sftp');
 const portability = require('./portability');
 const shellTransport = require('./transports/shell');
 const keygen = require('./keygen');
+const serial = require('./transports/serial');
 const paths = require('./paths');
 const { BUILTIN_THEMES, UI_THEMES } = require('../shared/themes');
 
@@ -165,6 +166,22 @@ function register() {
   handle('tsm:keys:types', () => keygen.TYPES);
 
   handle('tsm:shell:list', () => shellTransport.detectShells());
+
+  // ------------------------------------------------------------- serial ---
+  handle('tsm:serial:list', () => serial.listPorts());
+  handle('tsm:serial:info', () => ({
+    available: serial.isAvailable(),
+    baudRates: serial.BAUD_RATES,
+    defaults: serial.DEFAULTS
+  }));
+  handle('tsm:serial:break', (_e, id, ms) => {
+    const conn = manager.connectionFor(id);
+    if (!conn || typeof conn.sendBreak !== 'function') {
+      throw new Error('Esta sessao nao suporta sinal de break');
+    }
+    conn.sendBreak(ms);
+    return true;
+  });
   handle('tsm:knownhosts:list', () => repo.knownHosts.list());
   handle('tsm:knownhosts:remove', (_e, host, port, keyType) => {
     repo.knownHosts.remove(host, port, keyType);

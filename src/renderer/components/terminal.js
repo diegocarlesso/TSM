@@ -269,6 +269,11 @@ function wireTerminalDom(pane) {
       { label: 'Limpar', key: 'Ctrl+K', onClick: () => term.clear() },
       { separator: true },
       { label: 'Reconectar', onClick: () => reconnectPane(pane) },
+      {
+        label: 'Enviar break',
+        hidden: pane.type !== 'serial',
+        onClick: () => window.tsm.serial.sendBreak(pane.connectionId, 300)
+      },
       { label: 'Fechar painel', danger: true, onClick: () => closePane(pane.id) }
     ]);
   });

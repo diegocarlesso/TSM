@@ -7,6 +7,7 @@ const crypto = require('node:crypto');
 const { SshConnection } = require('./ssh');
 const { TelnetConnection } = require('./telnet');
 const { ShellConnection } = require('./shell');
+const { SerialConnection } = require('./serial');
 const repo = require('../store/repo');
 const vault = require('../security/vault');
 const logger = require('../logger');
@@ -51,6 +52,8 @@ function build(type, config, secrets) {
       return new TelnetConnection(config, secrets);
     case 'shell':
       return new ShellConnection(config, secrets);
+    case 'serial':
+      return new SerialConnection(config);
     default:
       throw new Error(`Tipo de sessao nao suportado: ${type}`);
   }
@@ -70,7 +73,7 @@ async function create(sender, { sessionId, type, config: inlineConfig, secrets: 
     id,
     sessionId: sessionId || null,
     type: kind,
-    name: (session && session.name) || config.host || config.shellPath || 'Sessao',
+    name: (session && session.name) || config.host || config.path || config.shellPath || 'Sessao',
     target: conn.target
   };
 
@@ -212,8 +215,11 @@ function removeForward(id, forwardId) {
   return c.listForwards();
 }
 
+/** Acesso generico a conexao viva, para recursos especificos de um transporte. */
+const connectionFor = (id) => at(id);
+
 module.exports = {
-  create, write, resize, close, answerPrompt, answerHostKey, list, closeAll,
+  create, write, resize, close, answerPrompt, answerHostKey, list, closeAll, connectionFor,
   sshConnectionFor, resolveConfig, resolveSecrets,
   startLog, stopLog, logStatus, forwardsOf, addForward, removeForward
 };

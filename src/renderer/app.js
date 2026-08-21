@@ -146,6 +146,7 @@ function bindUi() {
   $('#btn-import').addEventListener('click', importDialog);
   $('#btn-export').addEventListener('click', exportDialog);
   $('#btn-quick').addEventListener('click', quickConnect);
+  $('#btn-settings').addEventListener('click', () => settingsDialog('aparencia'));
 
   $('#search').addEventListener('input', (e) => {
     state.filter = e.target.value;
@@ -321,7 +322,7 @@ function tabMenu(e, tab, pane) {
     { separator: true },
     {
       label: 'Painel de arquivos',
-      hidden: pane.type === 'telnet' || pane.type === 'shell',
+      hidden: !['ssh', 'sftp'].includes(pane.type),
       onClick: () => sftpPanel.show(pane.id)
     },
     {
@@ -331,8 +332,16 @@ function tabMenu(e, tab, pane) {
     },
     {
       label: 'Tuneis…',
-      hidden: pane.type === 'shell' || pane.type === 'telnet',
+      hidden: !['ssh', 'sftp'].includes(pane.type),
       onClick: () => tunnelsDialog(pane)
+    },
+    {
+      label: 'Enviar break',
+      hidden: pane.type !== 'serial',
+      onClick: () => guard(async () => {
+        await window.tsm.serial.sendBreak(pane.connectionId, 300);
+        toast('Break enviado', 'ok', 1500);
+      })
     },
     { label: 'Gravar sessao em arquivo…', onClick: () => sessionLogDialog(pane) },
     { label: 'Biblioteca de comandos…', key: 'Ctrl+Shift+S', onClick: () => openSnippets() },

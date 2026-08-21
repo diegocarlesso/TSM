@@ -27,13 +27,34 @@ export async function settingsDialog(initialTab = 'aparencia') {
     draft[key] = value;
     state.settings[key] = value;
     await window.tsm.settings.set(key, value);
-    if (key.startsWith('terminal.')) refreshAppearance();
+    if (key.startsWith('terminal.')) {
+      refreshAppearance();
+      atualizarPrevias();
+    }
     if (key === 'ui.theme') applyUiTheme(value);
     if (key === 'ui.accent') document.documentElement.style.setProperty('--accent', value);
   };
 
   function rerender() {
     body.replaceChildren(strip(), panel());
+  }
+
+  /**
+   * Reaplica tipografia e cores nas previas ja montadas, sem reconstruir o
+   * painel: se remontassemos, o campo que o usuario esta digitando perderia o
+   * foco a cada tecla.
+   */
+  function atualizarPrevias() {
+    for (const node of body.querySelectorAll('.theme-preview')) {
+      const tema = state.themes.find((t) => t.id === draft['terminal.theme']) || state.themes[0];
+      if (!tema) continue;
+      node.style.fontFamily = draft['terminal.fontFamily'] || '';
+      node.style.fontSize = `${Number(draft['terminal.fontSize']) || 14}px`;
+      node.style.lineHeight = String(Number(draft['terminal.lineHeight']) || 1.2);
+      node.style.background = tema.data.background;
+      node.style.color = tema.data.foreground;
+      node.dataset.themeId = tema.id;
+    }
   }
 
   function strip() {
@@ -72,11 +93,13 @@ export async function settingsDialog(initialTab = 'aparencia') {
         select(
           state.themes.map((t) => ({ value: t.id, label: t.name })),
           draft['terminal.theme'] || 'tsm-dark',
-          (v) => commit('terminal.theme', v)
+          // `commit` sozinho nao redesenhava a previa: ela era montada uma vez,
+          // na renderizacao do painel, e ficava mostrando o tema anterior.
+          async (v) => { await commit('terminal.theme', v); rerender(); }
         ),
         el('button', { text: 'Editar temas…', onClick: () => themeEditor().then(rerender) })
       ]));
-      full(themePreview(draft['terminal.theme']));
+      full(themePreview(draft['terminal.theme'], draft));
     }
 
     if (tab === 'terminal') {
@@ -108,6 +131,8 @@ export async function settingsDialog(initialTab = 'aparencia') {
         type: 'text', value: draft['terminal.wordSeparators'],
         onInput: (e) => commit('terminal.wordSeparators', e.target.value)
       }), 'Usados no duplo clique.');
+      // A mesma previa aparece aqui, ja que esta aba mexe em fonte e tamanho.
+      full(themePreview(draft['terminal.theme'], draft));
     }
 
     if (tab === 'conexao') {
@@ -187,19 +212,32 @@ export async function settingsDialog(initialTab = 'aparencia') {
   await reloadSettings();
 }
 
-function themePreview(themeId) {
+/**
+ * Previa do tema do terminal. Recebe as preferencias em uso para que fonte,
+ * tamanho e altura de linha aparecam do jeito que ficarao de verdade — senao a
+ * previa mostra as cores certas com a tipografia errada.
+ */
+function themePreview(themeId, prefs = {}) {
   const t = state.themes.find((x) => x.id === themeId) || state.themes[0];
-  if (!t) return el('div');
+  if (!t) return el('div', { class: 'muted', text: 'Nenhum tema disponivel.' });
+
   const d = t.data;
   const line = (color, text) => `<span style="color:${color}">${text}</span>`;
+  const fonte = prefs['terminal.fontFamily'] || setting('terminal.fontFamily', 'monospace');
+  const tamanho = Number(prefs['terminal.fontSize'] || setting('terminal.fontSize', 14));
+  const altura = Number(prefs['terminal.lineHeight'] || setting('terminal.lineHeight', 1.2));
+
   return el('div', {
     class: 'theme-preview',
-    style: `background:${d.background};color:${d.foreground}`,
+    dataset: { themeId: t.id },
+    style: `background:${d.background};color:${d.foreground};font-family:${fonte};`
+      + `font-size:${tamanho}px;line-height:${altura}`,
     html: [
       `${line(d.green, 'usuario@servidor')}:${line(d.blue, '~/projetos')}$ ls -la`,
       `${line(d.brightBlue, 'drwxr-xr-x')}  4 root root  4096 ${line(d.cyan, 'config/')}`,
       `${line(d.foreground, '-rw-r--r--')}  1 root root 12043 ${line(d.foreground, 'app.log')}`,
-      `${line(d.red, 'erro:')} falha ao conectar  ${line(d.yellow, 'aviso:')} tentando de novo`
+      `${line(d.red, 'erro:')} falha ao conectar  ${line(d.yellow, 'aviso:')} tentando de novo`,
+      `${line(d.magenta, 'DEBUG')} pool=12 idle=3  ${line(d.brightGreen, 'OK')} 200`
     ].join('\n')
   });
 }

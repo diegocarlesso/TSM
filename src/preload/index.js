@@ -150,6 +150,12 @@ contextBridge.exposeInMainWorld('tsm', {
     pickFile: (opts) => call('tsm:io:pickFile', opts)
   },
 
+  serial: {
+    list: () => call('tsm:serial:list'),
+    info: () => call('tsm:serial:info'),
+    sendBreak: (id, ms) => call('tsm:serial:break', id, ms)
+  },
+
   system: {
     shells: () => call('tsm:shell:list'),
     knownHosts: () => call('tsm:knownhosts:list'),

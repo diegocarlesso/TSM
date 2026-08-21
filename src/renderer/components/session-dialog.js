@@ -6,8 +6,23 @@ import { state, reloadTree, setting } from './state.js';
 const TYPES = [
   { value: 'ssh', label: 'SSH' },
   { value: 'telnet', label: 'Telnet' },
+  { value: 'serial', label: 'Serial (COM)' },
   { value: 'shell', label: 'Shell local' },
   { value: 'sftp', label: 'SFTP (somente arquivos)' }
+];
+
+const PARIDADES = [
+  { value: 'none', label: 'Nenhuma' },
+  { value: 'even', label: 'Par' },
+  { value: 'odd', label: 'Impar' },
+  { value: 'mark', label: 'Mark' },
+  { value: 'space', label: 'Space' }
+];
+
+const FIM_DE_LINHA = [
+  { value: 'cr', label: 'CR - padrao em equipamento de rede' },
+  { value: 'lf', label: 'LF - padrao em Unix' },
+  { value: 'crlf', label: 'CR+LF' }
 ];
 
 const AUTH_TYPES = [
@@ -20,6 +35,12 @@ const AUTH_TYPES = [
 function defaultConfig(type) {
   if (type === 'telnet') return { host: '', port: 23, username: '', autoLogin: false, terminalType: 'xterm-256color' };
   if (type === 'shell') return { shellPath: '', cwd: '', terminalType: 'xterm-256color' };
+  if (type === 'serial') {
+    return {
+      path: '', baudRate: 9600, dataBits: 8, stopBits: 1, parity: 'none',
+      rtscts: false, xon: false, xoff: false, newline: 'cr', localEcho: false
+    };
+  }
   return {
     host: '', port: 22, username: '', authType: 'password',
     privateKeyPath: '', compression: false, x11Forward: false,
@@ -55,6 +76,8 @@ export async function sessionDialog(session, { folderId = null } = {}) {
   const body = el('div');
 
   const shells = await window.tsm.system.shells().catch(() => []);
+  let portasSeriais = await window.tsm.serial.list().catch(() => []);
+  const infoSerial = await window.tsm.serial.info().catch(() => ({ available: false, baudRates: [] }));
 
   function rerender() {
     body.replaceChildren(buildTabs(), buildPanel());
@@ -72,6 +95,7 @@ export async function sessionDialog(session, { folderId = null } = {}) {
     ];
     for (const [key, label] of tabs) {
       if (model.type === 'shell' && (key === 'auth' || key === 'tuneis')) continue;
+      if (model.type === 'serial' && (key === 'auth' || key === 'tuneis')) continue;
       strip.append(el('button', {
         class: activeTab === key ? 'active' : '',
         text: label,
@@ -106,7 +130,43 @@ export async function sessionDialog(session, { folderId = null } = {}) {
       const folderOptions = [{ value: '', label: '(raiz)' }, ...folderPaths()];
       add('Pasta', select(folderOptions, model.folderId || '', (v) => { model.folderId = v || null; }));
 
-      if (model.type === 'shell') {
+      if (model.type === 'serial') {
+        const opcoesPorta = [
+          { value: '', label: portasSeriais.length ? '(escolha a porta)' : '(nenhuma porta detectada)' },
+          ...portasSeriais.map((porta) => ({
+            value: porta.path,
+            label: porta.friendlyName || porta.manufacturer
+              ? `${porta.path} - ${porta.friendlyName || porta.manufacturer}`
+              : porta.path
+          }))
+        ];
+        // Uma porta salva pode nao existir agora (adaptador USB desconectado):
+        // ela continua na lista para nao sumir da configuracao da sessao.
+        if (c.path && !portasSeriais.some((porta) => porta.path === c.path)) {
+          opcoesPorta.push({ value: c.path, label: `${c.path} (nao conectada agora)` });
+        }
+
+        add('Porta', el('div', { class: 'inline' }, [
+          select(opcoesPorta, c.path || '', (v) => { c.path = v; }),
+          el('button', {
+            text: 'Atualizar',
+            title: 'Reler as portas disponiveis',
+            onClick: async () => {
+              portasSeriais = await window.tsm.serial.list().catch(() => []);
+              rerender();
+            }
+          })
+        ]), portasSeriais.length
+          ? undefined
+          : 'Nenhuma porta encontrada. Conecte o adaptador e clique em Atualizar.');
+
+        const bauds = (infoSerial.baudRates || [9600, 115200]).map((b) => ({
+          value: String(b), label: String(b)
+        }));
+        add('Velocidade (baud)', select(bauds, String(c.baudRate || 9600), (v) => {
+          c.baudRate = Number(v);
+        }));
+      } else if (model.type === 'shell') {
         const shellOptions = [
           { value: '', label: '(shell padrao do sistema)' },
           ...shells.map((s) => ({ value: s.path, label: `${s.label} — ${s.path}` }))
@@ -186,7 +246,8 @@ export async function sessionDialog(session, { folderId = null } = {}) {
     }
 
     if (activeTab === 'avancado') {
-      add('Tipo de terminal', el('input', {
+      // Numa serial nao existe terminal remoto para anunciar tipo.
+      if (model.type !== 'serial') add('Tipo de terminal', el('input', {
         type: 'text', value: c.terminalType || 'xterm-256color',
         onInput: (e) => { c.terminalType = e.target.value; }
       }));
@@ -221,6 +282,36 @@ export async function sessionDialog(session, { folderId = null } = {}) {
           onInput: (e) => { c.jump = { ...(c.jump || {}), port: Number(e.target.value) }; }
         }));
         add('Senha do gateway', secretInput('jumpPassword', false, pending));
+      }
+
+      if (model.type === 'serial') {
+        add('Bits de dados', select(
+          [{ value: '8', label: '8' }, { value: '7', label: '7' },
+           { value: '6', label: '6' }, { value: '5', label: '5' }],
+          String(c.dataBits || 8), (v) => { c.dataBits = Number(v); }
+        ));
+        add('Bits de parada', select(
+          [{ value: '1', label: '1' }, { value: '2', label: '2' }],
+          String(c.stopBits || 1), (v) => { c.stopBits = Number(v); }
+        ));
+        add('Paridade', select(PARIDADES, c.parity || 'none', (v) => { c.parity = v; }));
+        addFull(checkbox('Controle de fluxo por hardware (RTS/CTS)',
+          !!c.rtscts, (v) => { c.rtscts = v; }));
+        addFull(checkbox('Controle de fluxo por software (XON/XOFF)',
+          !!(c.xon && c.xoff), (v) => { c.xon = v; c.xoff = v; }));
+        add('Enter envia', select(FIM_DE_LINHA, c.newline || 'cr', (v) => { c.newline = v; }),
+          'Mandar o fim de linha errado e a causa mais comum de "conecta mas nao responde".');
+        addFull(checkbox('Eco local (mostrar o que voce digita)',
+          !!c.localEcho, (v) => { c.localEcho = v; }));
+        grid.append(el('div', {
+          class: 'hint full',
+          text: 'Ligue o eco local so quando o equipamento nao devolve o que voce digita.'
+        }));
+        add('Codificacao', select(
+          [{ value: 'utf8', label: 'UTF-8' }, { value: 'latin1', label: 'ISO-8859-1 (latin1)' },
+           { value: 'ascii', label: 'ASCII' }],
+          c.encoding || 'utf8', (v) => { c.encoding = v; }
+        ));
       }
 
       if (model.type === 'telnet') {
@@ -330,7 +421,11 @@ async function persist(model, pending, isNew) {
     toast('Informe um nome para a sessao', 'err');
     return undefined;
   }
-  if (model.type !== 'shell' && !model.config.host) {
+  if (model.type === 'serial' && !model.config.path) {
+    toast('Escolha a porta serial', 'err');
+    return undefined;
+  }
+  if (model.type !== 'shell' && model.type !== 'serial' && !model.config.host) {
     toast('Informe o host', 'err');
     return undefined;
   }
@@ -443,7 +538,7 @@ export async function quickConnectDialog() {
         el('label', { text: 'Destino' }), input,
         el('div', { class: 'hint', text: 'Aceita "root@10.0.0.1:2222". A porta padrao vem do protocolo.' }),
         el('label', { text: 'Protocolo' }),
-        select(TYPES.filter((t) => t.value !== 'shell'), type, (v) => { type = v; }),
+        select(TYPES.filter((t) => !['shell', 'serial'].includes(t.value)), type, (v) => { type = v; }),
         el('div', { class: 'full' }, [checkbox('Salvar como sessao depois de conectar', false, (v) => { save = v; })])
       ]);
     },
