@@ -1,7 +1,7 @@
 {
   "name": "total-session-manager",
   "productName": "Total Session Manager",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Gerenciador de sessoes remotas (SSH, Telnet, Shell local, SFTP/SCP) multiplataforma, sem limite de sessoes salvas.",
   "author": "Diego Carlesso",
   "license": "MIT",

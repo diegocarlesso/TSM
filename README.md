@@ -279,7 +279,7 @@ desempenho.
 TSM_SMOKE=1 TSM_UITEST=scripts/uitest-split.js npx electron .
 ```
 
-22 verificações na interface de verdade — abre a janela e dirige tudo por clique e teclado
+21 verificações na interface de verdade — abre a janela e dirige tudo por clique e teclado
 (nenhuma porta de teste no código de produção): identidade visual, split, divisórias
 arrastáveis, navegação entre painéis e fechamento.
 
@@ -287,7 +287,7 @@ arrastáveis, navegação entre painéis e fechamento.
 TSM_SMOKE=1 TSM_UITEST=scripts/uitest-config.js npx electron .
 ```
 
-Mais 18 verificações sobre a prévia de personalização e o editor de sessão serial.
+Mais 17 verificações sobre a prévia de personalização e o editor de sessão serial.
 
 ```bash
 TSM_DATA_DIR=./serial node scripts/seed-serial.js
