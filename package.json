@@ -1,0 +1,35 @@
+{
+  "name": "total-session-manager",
+  "productName": "Total Session Manager",
+  "version": "1.0.0",
+  "description": "Gerenciador de sessoes remotas (SSH, Telnet, Shell local, SFTP/SCP) multiplataforma, sem limite de sessoes salvas.",
+  "author": "Diego Carlesso",
+  "license": "MIT",
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "npm run build:renderer && electron .",
+    "dev": "npm run build:renderer -- --watch & electron .",
+    "build:renderer": "node scripts/build-renderer.mjs",
+    "rebuild": "electron-builder install-app-deps",
+    "postinstall": "electron-builder install-app-deps",
+    "dist": "npm run build:renderer && electron-builder",
+    "dist:win": "npm run build:renderer && electron-builder --win",
+    "dist:linux": "npm run build:renderer && electron-builder --linux",
+    "dist:mac": "npm run build:renderer && electron-builder --mac"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/addon-search": "^0.15.0",
+    "@xterm/addon-unicode11": "^0.8.0",
+    "@xterm/addon-web-links": "^0.11.0",
+    "@xterm/xterm": "^5.5.0",
+    "better-sqlite3": "^11.5.0",
+    "node-pty": "^1.0.0",
+    "ssh2": "^1.16.0"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.24.0"
+  }
+}

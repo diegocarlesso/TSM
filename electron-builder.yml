@@ -1,0 +1,44 @@
+appId: com.diegocarlesso.tsm
+productName: Total Session Manager
+copyright: Copyright (c) 2026 Diego Carlesso
+directories:
+  output: dist
+  buildResources: build
+files:
+  - src/**/*
+  - "!src/renderer/app.js.map"
+  - package.json
+asarUnpack:
+  - "**/node_modules/node-pty/**"
+  - "**/node_modules/better-sqlite3/**"
+win:
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+    - target: portable
+      arch: [x64]
+  artifactName: TSM-${version}-${arch}.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  shortcutName: Total Session Manager
+linux:
+  target:
+    - AppImage
+    - deb
+    - rpm
+    - tar.gz
+  category: Network
+  maintainer: Diego Carlesso
+  synopsis: Gerenciador de sessoes SSH/Telnet/Shell/SFTP
+mac:
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+    - target: zip
+      arch: [x64, arm64]
+  category: public.app-category.developer-tools
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
