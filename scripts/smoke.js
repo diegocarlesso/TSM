@@ -19,7 +19,8 @@ const electronStub = {
   app: {
     getPath: () => tmp,
     getVersion: () => '1.0.0',
-    getName: () => 'TSM'
+    getName: () => 'TSM',
+    isPackaged: false
   },
   safeStorage: {
     isEncryptionAvailable: () => true,
@@ -48,14 +49,44 @@ let pass = 0;
 let fail = 0;
 
 function check(label, fn) {
+  const t0 = Date.now();
   try {
     if (fn() === false) throw new Error('retornou false');
-    console.log(`  ok    ${label}`);
+    const ms = Date.now() - t0;
+    console.log(`  ok    ${label}${ms > 400 ? `  (${(ms / 1000).toFixed(1)}s)` : ''}`);
     pass++;
   } catch (err) {
-    console.log(`  FALHA ${label}`);
+    console.log(`  FALHA ${label}  (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
     console.log(`        ${err.message}`);
     fail++;
+  }
+}
+
+/**
+ * Verificacoes assincronas. Como este arquivo e CommonJS (sem top-level await),
+ * elas ficam numa fila e rodam no `finish()`, sob o cabecalho proprio.
+ */
+const pending = [];
+const checkAsync = (section, label, fn) => pending.push({ section, label, fn });
+
+async function runPending() {
+  let lastSection = null;
+  for (const item of pending) {
+    if (item.section !== lastSection) {
+      console.log(`\n[${item.section}]`);
+      lastSection = item.section;
+    }
+    const t0 = Date.now();
+    try {
+      await item.fn();
+      const ms = Date.now() - t0;
+      console.log(`  ok    ${item.label}${ms > 400 ? `  (${(ms / 1000).toFixed(1)}s)` : ''}`);
+      pass++;
+    } catch (err) {
+      console.log(`  FALHA ${item.label}`);
+      console.log(`        ${err.message}`);
+      fail++;
+    }
   }
 }
 
@@ -77,9 +108,18 @@ const shellTransport = require('../src/main/transports/shell');
 console.log(`\nTSM - teste de fumaca (dados em ${tmp})\n`);
 
 console.log('[banco]');
-check('abre e migra', () => {
+check('abre e aplica todas as migracoes', () => {
   db.open();
-  assert(db.get().pragma('user_version', { simple: true }) === 1, 'user_version deveria ser 1');
+  const v = db.get().pragma('user_version', { simple: true });
+  assert(v >= 2, `user_version = ${v}`);
+  // As tabelas de todas as migracoes precisam existir.
+  for (const t of ['folders', 'sessions', 'identities', 'secrets', 'settings',
+                   'themes', 'known_hosts', 'connection_log', 'snippets']) {
+    const row = db.get()
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
+      .get(t);
+    assert(row, `tabela ${t} nao foi criada`);
+  }
 });
 check(`motor ativo: ${db.engine()}`, () => true);
 
@@ -112,15 +152,21 @@ check('cria sessao com config JSON e etiquetas', () => {
   assert(repo.sessions.find(s1.id).config.host === '10.0.0.5');
   assert(repo.sessions.find(s1.id).tags.length === 2);
 });
-check('sem limite de sessoes salvas (grava 500)', () => {
-  for (let i = 0; i < 500; i++) {
-    repo.sessions.create({
-      name: `host-${i}`,
-      type: 'ssh',
-      config: { host: `10.1.${i >> 8}.${i & 255}` }
-    });
-  }
+check('sem limite de sessoes salvas (grava 500 numa transacao)', () => {
+  const t0 = Date.now();
+  repo.tx(() => {
+    for (let i = 0; i < 500; i++) {
+      repo.sessions.create({
+        name: `host-${i}`,
+        type: 'ssh',
+        config: { host: `10.1.${i >> 8}.${i & 255}` }
+      });
+    }
+  });
+  const ms = Date.now() - t0;
   assert(repo.sessions.count() === 501, `contou ${repo.sessions.count()}`);
+  // Guarda-chuva contra regressao: sem transacao isso levava mais de um minuto.
+  assert(ms < 15000, `500 insercoes levaram ${ms} ms — a transacao deixou de ser aplicada?`);
 });
 check('busca por nome e por conteudo da config', () => {
   assert(repo.sessions.search('db-master').length === 1);
@@ -197,6 +243,85 @@ check('preferencias guardam JSON estruturado', () => {
   assert(repo.settings.get('terminal.fontSize') === 14);
   repo.settings.set('window.bounds', { x: 10, y: 20, width: 800, height: 600 });
   assert(repo.settings.get('window.bounds').width === 800);
+});
+
+console.log('\n[biblioteca de comandos]');
+check('cria, lista, edita e remove snippet', () => {
+  const snip = repo.snippets.create({
+    name: 'Uso de disco', content: 'df -h', category: 'Diagnostico'
+  });
+  assert(repo.snippets.list().length === 1);
+  assert(repo.snippets.find(snip.id).run === true);
+  repo.snippets.update(snip.id, { content: 'df -hT', run: false });
+  assert(repo.snippets.find(snip.id).content === 'df -hT');
+  assert(repo.snippets.find(snip.id).run === false);
+  repo.snippets.remove(snip.id);
+  assert(repo.snippets.list().length === 0);
+});
+
+console.log('\n[gravacao de sessao]');
+const logger = require('../src/main/logger');
+checkAsync('gravacao de sessao', 'grava a saida removendo as cores ANSI', async () => {
+  const ESC = String.fromCharCode(27);
+  const BEL = String.fromCharCode(7);
+  const EOL = String.fromCharCode(13, 10);
+  const file = path.join(tmp, 'sessao.log');
+  logger.start('conn-teste', { template: file, meta: { name: 'teste' }, stripAnsi: true });
+  logger.write('conn-teste', ESC + '[31mERRO' + ESC + '[0m ao conectar' + EOL);
+  logger.write('conn-teste', ESC + ']0;titulo' + BEL + 'segunda linha' + EOL);
+  // `stop` so resolve depois do flush; ler antes disso daria ENOENT.
+  const st = await logger.stop('conn-teste');
+  assert(st && st.filePath === file, JSON.stringify(st));
+  const out = fs.readFileSync(file, 'utf8');
+  assert(!out.includes(ESC), 'sobrou sequencia ANSI no log');
+  assert(out.includes('ERRO ao conectar'), out);
+  assert(out.includes('segunda linha'), out);
+});
+check('modelo de caminho expande os marcadores', () => {
+  const resolved = logger.resolvePath('%name%-%host%-%Y%.log', { name: 'srv 01', host: '10.0.0.1' });
+  assert(/srv_01-10\.0\.0\.1-\d{4}\.log$/.test(resolved), resolved);
+});
+
+console.log('\n[chaves SSH]');
+const keygen = require('../src/main/keygen');
+check('gera par ed25519 no formato OpenSSH', () => {
+  const pair = keygen.generate({ type: 'ed25519', comment: 'diego@tsm' });
+  assert(pair.privateKey.startsWith('-----BEGIN OPENSSH PRIVATE KEY-----'), pair.privateKey.slice(0, 40));
+  assert(pair.publicKey.startsWith('ssh-ed25519 AAAA'), pair.publicKey.slice(0, 30));
+  assert(/^SHA256:/.test(pair.fingerprint), pair.fingerprint);
+  assert(pair.encrypted === false);
+});
+check('grava o par e le de volta', () => {
+  const pair = keygen.generate({ type: 'ed25519', comment: 'teste' });
+  const saved = keygen.save(pair, { dir: path.join(tmp, 'keys'), name: 'id_teste' });
+  assert(fs.existsSync(saved.privatePath) && fs.existsSync(saved.publicPath));
+  const info = keygen.inspect(saved.privatePath);
+  assert(info.fingerprint === pair.fingerprint, `${info.fingerprint} != ${pair.fingerprint}`);
+  // Nao sobrescreve chave existente sem avisar.
+  let sobrescreveu = false;
+  try {
+    keygen.save(pair, { dir: path.join(tmp, 'keys'), name: 'id_teste' });
+    sobrescreveu = true;
+  } catch { /* esperado */ }
+  assert(!sobrescreveu, 'sobrescreveu uma chave que ja existia');
+});
+check('chave com senha nao abre sem a senha', () => {
+  const pair = keygen.generate({ type: 'rsa', bits: 2048, passphrase: 'segredo123' });
+  assert(pair.encrypted === true);
+  const saved = keygen.save(pair, { dir: path.join(tmp, 'keys'), name: 'id_rsa_teste' });
+  const semSenha = keygen.inspect(saved.privatePath);
+  assert(semSenha.needsPassphrase === true, JSON.stringify(semSenha));
+  const comSenha = keygen.inspect(saved.privatePath, 'segredo123');
+  assert(comSenha.type === 'ssh-rsa', comSenha.type);
+});
+
+console.log('\n[modo portatil]');
+check('os dados ficam na pasta apontada, nao no perfil do usuario', () => {
+  const paths = require('../src/main/paths');
+  assert(paths.dataDir() === tmp, `${paths.dataDir()} != ${tmp}`);
+  assert(path.dirname(db.getPath()) === tmp, db.getPath());
+  assert(paths.logsDir() === path.join(tmp, 'logs'));
+  assert(paths.keysDir() === path.join(tmp, 'keys'));
 });
 
 console.log('\n[importador MobaXterm]');
@@ -313,7 +438,9 @@ check('export com credenciais cifra o bloco e o import restaura', () => {
   const raw = fs.readFileSync(file, 'utf8');
   assert(!raw.includes('senha-super-secreta'), 'senha em claro no arquivo');
 
-  for (const s of repo.sessions.list()) repo.sessions.remove(s.id);
+  repo.tx(() => {
+    for (const s of repo.sessions.list()) repo.sessions.remove(s.id);
+  });
   assert(repo.sessions.count() === 0);
 
   const res = portability.importFromFile(file, { strategy: 'merge', passphrase: 'arquivo-2026' });
@@ -390,15 +517,19 @@ check(
   }
 );
 
-console.log('\n[backup]');
-check('gera copia do banco', () => {
+checkAsync('backup', 'gera copia do banco', async () => {
   const dest = path.join(tmp, 'backup.db');
-  db.get().backup(dest);
+  await db.get().backup(dest);
   assert(fs.existsSync(dest), 'arquivo de backup nao foi criado');
-  assert(fs.statSync(dest).size > 0);
+  assert(fs.statSync(dest).size > 0, 'backup vazio');
 });
 
-db.close();
-console.log(`\n${pass} passaram, ${fail} falharam\n`);
-if (!fail) fs.rmSync(tmp, { recursive: true, force: true });
-process.exit(fail ? 1 : 0);
+async function finish() {
+  await runPending();
+  db.close();
+  console.log(`\n${pass} passaram, ${fail} falharam\n`);
+  if (!fail) fs.rmSync(tmp, { recursive: true, force: true });
+  process.exit(fail ? 1 : 0);
+}
+
+finish();

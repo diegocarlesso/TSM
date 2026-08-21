@@ -19,6 +19,17 @@ function parseFolder(row) {
   return { ...row, expanded: !!row.expanded };
 }
 
+/**
+ * Roda `fn` dentro de uma unica transacao.
+ *
+ * Isso nao e um detalhe de estilo: no motor WASM cada commit custa um fsync
+ * (~120 ms). Gravar 500 sessoes uma a uma leva mais de um minuto; as mesmas
+ * 500 dentro de uma transacao levam ~250 ms. Todo laco de escrita passa aqui.
+ */
+function tx(fn) {
+  return db.get().transaction(fn)();
+}
+
 // ---------------------------------------------------------------- pastas ---
 const folders = {
   list() {
@@ -358,6 +369,55 @@ const knownHosts = {
   }
 };
 
+// -------------------------------------------------------------- snippets ---
+const snippets = {
+  list() {
+    return db.get()
+      .prepare('SELECT * FROM snippets ORDER BY category COLLATE NOCASE, sort_order, name COLLATE NOCASE')
+      .all()
+      .map((r) => ({ ...r, run: !!r.run }));
+  },
+  find(id) {
+    const r = db.get().prepare('SELECT * FROM snippets WHERE id = ?').get(id);
+    return r ? { ...r, run: !!r.run } : null;
+  },
+  create(input) {
+    const t = now();
+    const id = input.id || uid();
+    db.get().prepare(
+      `INSERT INTO snippets (id, name, content, category, shortcut, run, sort_order, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      id, input.name, input.content, input.category || '', input.shortcut || '',
+      input.run === false ? 0 : 1,
+      input.sortOrder ?? nextOrder('snippets', 'category', input.category || ''),
+      t, t
+    );
+    return snippets.find(id);
+  },
+  update(id, patch) {
+    const cur = snippets.find(id);
+    if (!cur) throw new Error(`Comando ${id} nao encontrado`);
+    db.get().prepare(
+      `UPDATE snippets SET name = ?, content = ?, category = ?, shortcut = ?, run = ?,
+                           sort_order = ?, updated_at = ?
+       WHERE id = ?`
+    ).run(
+      patch.name ?? cur.name,
+      patch.content ?? cur.content,
+      patch.category !== undefined ? patch.category : cur.category,
+      patch.shortcut !== undefined ? patch.shortcut : cur.shortcut,
+      (patch.run !== undefined ? patch.run : cur.run) ? 1 : 0,
+      patch.sortOrder ?? cur.sort_order,
+      now(), id
+    );
+    return snippets.find(id);
+  },
+  remove(id) {
+    db.get().prepare('DELETE FROM snippets WHERE id = ?').run(id);
+  }
+};
+
 // ------------------------------------------------------------------- log ---
 const log = {
   open(entry) {
@@ -380,4 +440,7 @@ const log = {
   }
 };
 
-module.exports = { folders, sessions, identities, settings, themes, knownHosts, log, uid, descendants };
+module.exports = {
+  folders, sessions, identities, settings, themes, knownHosts, snippets, log,
+  tx, uid, descendants
+};

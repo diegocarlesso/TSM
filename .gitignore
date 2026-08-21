@@ -25,6 +25,8 @@ src/renderer/vendor/
 tsm.db*
 userdata/
 profile/
+# pasta de dados do modo portatil (banco, logs, chaves)
+data/
 
 # exports de sessoes (podem conter credenciais cifradas)
 *.tsm.json

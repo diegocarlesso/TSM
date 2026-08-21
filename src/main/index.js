@@ -18,15 +18,15 @@ if (!app.requestSingleInstanceLock()) {
 let mainWindow = null;
 
 function seed() {
-  for (const t of BUILTIN_THEMES) {
-    if (!repo.themes.find(t.id)) repo.themes.upsert({ ...t, builtin: true });
-  }
-  const current = repo.settings.all();
-  const missing = {};
-  for (const [k, v] of Object.entries(DEFAULT_SETTINGS)) {
-    if (current[k] === undefined) missing[k] = v;
-  }
-  if (Object.keys(missing).length) repo.settings.merge(missing);
+  repo.tx(() => {
+    for (const t of BUILTIN_THEMES) {
+      if (!repo.themes.find(t.id)) repo.themes.upsert({ ...t, builtin: true });
+    }
+    const current = repo.settings.all();
+    for (const [k, v] of Object.entries(DEFAULT_SETTINGS)) {
+      if (current[k] === undefined) repo.settings.set(k, v);
+    }
+  });
 }
 
 function restoreBounds() {

@@ -11,6 +11,8 @@ const manager = require('./transports/manager');
 const sftp = require('./sftp');
 const portability = require('./portability');
 const shellTransport = require('./transports/shell');
+const keygen = require('./keygen');
+const paths = require('./paths');
 const { BUILTIN_THEMES, UI_THEMES } = require('../shared/themes');
 
 /** Envolve o handler para que erros virem `{ok:false,error}` em vez de rejeicao crua. */
@@ -38,6 +40,9 @@ function register() {
     electron: process.versions.electron,
     node: process.versions.node,
     dbPath: db.getPath(),
+    dataDir: paths.dataDir(),
+    portable: paths.isPortable(),
+    sqliteEngine: db.engine(),
     homedir: os.homedir(),
     hasPty: shellTransport.hasPty()
   }));
@@ -126,6 +131,38 @@ function register() {
     manager.answerHostKey(id, accept);
     return true;
   });
+
+  // ------------------------------------------------- log de sessao -------
+  handle('tsm:conn:startLog', (_e, id, options) => manager.startLog(id, options || {}));
+  handle('tsm:conn:stopLog', (_e, id) => manager.stopLog(id));
+  handle('tsm:conn:logStatus', (_e, id) => manager.logStatus(id));
+  handle('tsm:log:defaultDir', () => require('./logger').defaultDir());
+
+  // ------------------------------------------------------- tuneis --------
+  handle('tsm:conn:forwards', (_e, id) => manager.forwardsOf(id));
+  handle('tsm:conn:addForward', (_e, id, spec) => manager.addForward(id, spec));
+  handle('tsm:conn:removeForward', (_e, id, forwardId) => manager.removeForward(id, forwardId));
+
+  // ---------------------------------------------- biblioteca de comandos --
+  handle('tsm:snippets:list', () => repo.snippets.list());
+  handle('tsm:snippets:create', (_e, input) => repo.snippets.create(input));
+  handle('tsm:snippets:update', (_e, id, patch) => repo.snippets.update(id, patch));
+  handle('tsm:snippets:remove', (_e, id) => { repo.snippets.remove(id); return true; });
+
+  // -------------------------------------------------------- chaves SSH ---
+  handle('tsm:keys:list', () => keygen.list());
+  handle('tsm:keys:generate', (_e, options) => {
+    const pair = keygen.generate(options);
+    // A chave privada NAO volta para o renderer; so o que da para mostrar.
+    const saved = keygen.save(pair, { dir: options.dir, name: options.name });
+    return {
+      ...saved,
+      type: pair.type, bits: pair.bits, comment: pair.comment,
+      publicKey: pair.publicKey, fingerprint: pair.fingerprint, encrypted: pair.encrypted
+    };
+  });
+  handle('tsm:keys:inspect', (_e, filePath, passphrase) => keygen.inspect(filePath, passphrase));
+  handle('tsm:keys:types', () => keygen.TYPES);
 
   handle('tsm:shell:list', () => shellTransport.detectShells());
   handle('tsm:knownhosts:list', () => repo.knownHosts.list());

@@ -44,6 +44,16 @@ reutiliza, modifica nem contorna nada do produto da Mobatek.
 
 ### Produtividade
 - **MultiExec** (`Ctrl+Shift+M`): digita um comando e envia para todas as abas conectadas.
+- **Biblioteca de comandos** (`Ctrl+Shift+S`): guarde o que você repete todo dia, por
+  categoria, e dispare na aba ativa ou em todas de uma vez. Cada comando escolhe se executa
+  na hora ou só digita, para você revisar antes.
+- **Gravação de sessão em arquivo**: liga e desliga por aba, com modelo de nome
+  (`%name%_%Y%%M%%D%_%h%%m%%s%.log`), remoção de códigos ANSI e carimbo de hora por linha.
+  A gravação roda no processo principal, então continua com a aba em segundo plano.
+- **Gerenciador de túneis ao vivo**: abre e fecha encaminhamentos `-L`/`-R` numa sessão já
+  conectada, com estado de cada um.
+- **Gerador de chaves SSH** (Ed25519, ECDSA, RSA) no formato OpenSSH, com senha opcional,
+  fingerprint SHA256 e a chave pública pronta para colar no `authorized_keys`.
 - Busca dentro do terminal (`Ctrl+F`), copiar-ao-selecionar, colar com botão direito,
   confirmação ao colar múltiplas linhas.
 - Reconexão automática opcional quando a conexão cai.
@@ -97,7 +107,10 @@ Isso exige as ferramentas de compilação da plataforma (VS Build Tools no Windo
 `build-essential` no Debian/Ubuntu, `xcode-select --install` no macOS). Se a compilação
 falhar, o TSM continua funcionando com o WASM.
 
-## Empacotamento
+## Empacotamento (portátil)
+
+O TSM **não tem instalador**. Cada build produz um executável que roda de onde estiver —
+disco local, pendrive, pasta de rede.
 
 ```bash
 npm run dist:win
@@ -111,22 +124,49 @@ npm run dist:linux
 npm run dist:mac
 ```
 
-Gera instaladores em `dist/`: NSIS + portátil no Windows; AppImage, `.deb`, `.rpm` e
-`.tar.gz` no Linux; `.dmg` e `.zip` no macOS.
+O que sai em `dist/`:
 
-## Modo portátil
+| Plataforma | Artefato | Como usar |
+|---|---|---|
+| Windows | `win-unpacked/` | Pasta pronta com `Total Session Manager.exe` e os arquivos de apoio. Copie a pasta inteira e execute. |
+| Windows | `TSM-1.0.0-portable-x64.exe` | Executável único que se auto-extrai e roda. |
+| Linux | `TSM-1.0.0-x64.AppImage` | Um arquivo só: `chmod +x` e execute. |
+| Linux | `linux-unpacked/`, `.tar.gz` | Pasta com o binário e as bibliotecas. |
+| macOS | `mac/Total Session Manager.app` | Arraste para onde quiser e abra. |
+| macOS | `.dmg` / `.zip` | Envelope para distribuir o `.app`. |
 
-Defina `TSM_DATA_DIR` para guardar o banco junto do executável (pendrive, pasta de rede):
+### Onde ficam os dados
 
-```bash
-TSM_DATA_DIR=./dados npm start
+Por padrão o TSM é **portátil**: o banco, os logs de sessão e as chaves geradas ficam numa
+pasta `data/` **ao lado do executável**.
+
+```
+TSM/
+├── Total Session Manager.exe
+├── resources/
+└── data/
+    ├── tsm.db          ← sessões, pastas, temas, credenciais cifradas
+    ├── logs/           ← gravações de sessão
+    └── keys/           ← chaves SSH geradas aqui
 ```
 
-No Windows, com o executável portátil:
+Copiar a pasta (ou o pendrive) leva tudo junto — sessões, preferências e credenciais.
+
+A ordem de resolução é: `TSM_DATA_DIR` → pasta do executável → perfil do usuário. O último
+caso só acontece se a pasta do executável for somente leitura (por exemplo, o `.app` dentro
+de `/Applications`). *Ferramentas → Sobre* mostra qual está em uso.
+
+Para apontar outra pasta:
 
 ```bash
-set TSM_DATA_DIR=.\dados && TSM.exe
+TSM_DATA_DIR=/mnt/pendrive/tsm ./TSM.AppImage
 ```
+
+> **Atenção ao modo portátil com credenciais:** no esquema padrão as senhas são cifradas
+> pelo cofre do sistema operacional, que é atrelado ao *seu usuário naquela máquina*. Levando
+> o `data/` para outro computador, o banco abre mas as senhas não. Se você vai usar o mesmo
+> `data/` em máquinas diferentes, defina uma **senha mestra** em *Configurações → Segurança*:
+> aí a chave vem da sua senha, não do SO.
 
 ---
 
@@ -166,6 +206,7 @@ listadas nos avisos, não silenciosamente descartadas.
 | `Ctrl+F` / `Ctrl+K` | Localizar / limpar terminal |
 | `Ctrl+B` / `Ctrl+Shift+E` | Barra lateral / painel de arquivos |
 | `Ctrl+Shift+M` | MultiExec |
+| `Ctrl+Shift+S` | Biblioteca de comandos |
 | `Ctrl+L` | Bloquear cofre |
 
 ---
@@ -173,6 +214,22 @@ listadas nos avisos, não silenciosamente descartadas.
 ## Arquitetura
 
 Veja [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Testes
+
+```bash
+node scripts/smoke.js
+```
+
+Exercita banco, migrações, cofre, importadores, export/import, negociação Telnet, gravação
+de sessão e geração de chaves — 43 verificações, sem abrir a interface. Inclui um teto de
+tempo para a inserção em lote, que já pegou uma regressão real de desempenho.
+
+Para validar que a janela sobe de verdade:
+
+```bash
+TSM_SMOKE=1 npx electron .
+```
 
 ## Licença
 

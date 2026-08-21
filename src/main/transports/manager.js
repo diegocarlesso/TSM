@@ -9,6 +9,7 @@ const { TelnetConnection } = require('./telnet');
 const { ShellConnection } = require('./shell');
 const repo = require('../store/repo');
 const vault = require('../security/vault');
+const logger = require('../logger');
 
 const live = new Map();   // id -> { conn, meta, logId }
 
@@ -78,7 +79,11 @@ async function create(sender, { sessionId, type, config: inlineConfig, secrets: 
   });
   live.set(id, { conn, meta, logId, sender });
 
-  conn.on('data', (d) => emit(sender, 'tsm:conn:data', { id, data: d }));
+  conn.on('data', (d) => {
+    logger.write(id, d);
+    emit(sender, 'tsm:conn:data', { id, data: d });
+  });
+  conn.on('forwards', (list) => emit(sender, 'tsm:conn:forwards', { id, forwards: list }));
   conn.on('status', (s) => emit(sender, 'tsm:conn:status', { id, status: s }));
   conn.on('banner', (b) => emit(sender, 'tsm:conn:data', { id, data: b.replace(/\n/g, '\r\n') }));
   conn.on('ready', () => {
@@ -94,9 +99,25 @@ async function create(sender, { sessionId, type, config: inlineConfig, secrets: 
   });
   conn.on('close', (code) => {
     repo.log.close(logId, 'closed');
+    logger.stop(id);
     live.delete(id);
     emit(sender, 'tsm:conn:close', { id, code });
   });
+
+  // Gravacao automatica quando a sessao pede.
+  if (config.logging && config.logging.enabled) {
+    try {
+      logger.start(id, {
+        template: config.logging.template,
+        append: config.logging.append,
+        stripAnsi: config.logging.stripAnsi,
+        timestamp: config.logging.timestamp,
+        meta: { name: meta.name, host: config.host, username: config.username, type: kind }
+      });
+    } catch (err) {
+      emit(sender, 'tsm:conn:error', { id, message: `Log da sessao: ${err.message}` });
+    }
+  }
 
   try {
     await conn.connect();
@@ -121,6 +142,7 @@ function answerHostKey(id, accept) { const c = at(id); if (c && c.answerHostKey)
 function list() { return [...live.values()].map((e) => e.meta); }
 
 function closeAll() {
+  logger.stopAll();
   for (const { conn } of live.values()) {
     try { conn.close(); } catch { /* noop */ }
   }
@@ -134,7 +156,44 @@ function sshConnectionFor(id) {
   return c;
 }
 
+// ------------------------------------------------------ log de sessao -----
+function startLog(id, options) {
+  const entry = live.get(id);
+  if (!entry) throw new Error('Conexao nao esta ativa');
+  const cfg = entry.conn.config || {};
+  return logger.start(id, {
+    ...options,
+    meta: {
+      name: entry.meta.name, host: cfg.host, username: cfg.username, type: entry.meta.type
+    }
+  });
+}
+
+const stopLog = (id) => logger.stop(id);
+const logStatus = (id) => logger.status(id);
+
+// ---------------------------------------------------------- tuneis --------
+function forwardsOf(id) {
+  const c = at(id);
+  return c && typeof c.listForwards === 'function' ? c.listForwards() : [];
+}
+
+function addForward(id, spec) {
+  const c = at(id);
+  if (!c || typeof c.addForward !== 'function') throw new Error('Esta conexao nao suporta tuneis');
+  c.addForward(spec);
+  return c.listForwards();
+}
+
+function removeForward(id, forwardId) {
+  const c = at(id);
+  if (!c || typeof c.removeForward !== 'function') return [];
+  c.removeForward(forwardId);
+  return c.listForwards();
+}
+
 module.exports = {
   create, write, resize, close, answerPrompt, answerHostKey, list, closeAll,
-  sshConnectionFor, resolveConfig, resolveSecrets
+  sshConnectionFor, resolveConfig, resolveSecrets,
+  startLog, stopLog, logStatus, forwardsOf, addForward, removeForward
 };

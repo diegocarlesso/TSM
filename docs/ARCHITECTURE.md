@@ -8,12 +8,16 @@ O TSM é um aplicativo Electron com separação estrita entre os dois processos:
 ┌──────────────────────────── processo principal (Node) ────────────────────────────┐
 │                                                                                   │
 │  index.js ── janela, menu, CSP, ciclo de vida                                     │
-│  ipc.js ──── superfície de API (~60 canais), todos com tratamento de erro         │
+│  ipc.js ──── superfície de API (~80 canais), todos com tratamento de erro         │
+│  paths.js ── onde ficam os dados (modo portátil)                                  │
 │                                                                                   │
-│  store/     db.js (SQLite + migrações)  ·  repo.js (pastas, sessões, temas, log)  │
+│  store/     db.js (SQLite + migrações) · sqlite.js (adaptador de 2 motores)       │
+│             repo.js (pastas, sessões, temas, snippets, log)                       │
 │  security/  vault.js (safeStorage ou AES-256-GCM + scrypt)                        │
 │  transports/ ssh.js · telnet.js · shell.js · manager.js (registro de conexões)    │
 │  sftp.js    navegação e transferência sobre a conexão SSH existente               │
+│  logger.js  gravação da saída das sessões em arquivo                              │
+│  keygen.js  geração e inspeção de chaves SSH (OpenSSH)                            │
 │  importers/ mobaxterm.js · putty.js       portability.js (import/export nativo)   │
 └───────────────────────────────────────────────────────────────────────────────────┘
                                     ▲
@@ -23,7 +27,7 @@ O TSM é um aplicativo Electron com separação estrita entre os dois processos:
 ┌────────────────────────────── renderer (Chromium) ────────────────────────────────┐
 │  app.js ────── orquestração, abas, atalhos, paleta, MultiExec                     │
 │  components/  state.js · tree.js · terminal.js · sftp.js                          │
-│               session-dialog.js · settings-dialog.js · ui.js                      │
+│               session-dialog.js · settings-dialog.js · tools-dialog.js · ui.js    │
 │  xterm.js + addons (fit, search, web-links, unicode11)                            │
 └───────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -34,9 +38,29 @@ permite ligar `contextIsolation` sem exceções.
 
 ---
 
+## Onde ficam os dados (modo portátil)
+
+O TSM não tem instalador. `paths.js` resolve a pasta de dados nesta ordem:
+
+1. `TSM_DATA_DIR` — controle explícito;
+2. `PORTABLE_EXECUTABLE_DIR` — definida pelo `.exe` portátil, que se auto-extrai num
+   diretório temporário (então `process.execPath` apontaria para o lugar errado);
+3. `<pasta do executável>/data`, se der para escrever;
+4. `userData` do sistema, como último recurso.
+
+Em desenvolvimento a "pasta do executável" é a raiz do projeto — `process.execPath` seria o
+electron dentro de `node_modules`. No macOS, sobe do `TSM.app/Contents/MacOS/` até a pasta
+que contém o `.app`.
+
+O passo 4 existe porque a pasta do executável pode ser somente leitura (`.app` em
+`/Applications`, AppImage num sistema montado read-only). Escrever é testado de fato — com
+um arquivo de teste — em vez de inferir das permissões.
+
+---
+
 ## Persistência
 
-SQLite em `<userData>/tsm.db` (ou em `$TSM_DATA_DIR` no modo portátil), com chaves
+SQLite em `<pasta de dados>/tsm.db` (ou em `$TSM_DATA_DIR` no modo portátil), com chaves
 estrangeiras ativas e migrações versionadas por `PRAGMA user_version`.
 
 `store/sqlite.js` é um adaptador que expõe **uma única API** sobre dois motores:
@@ -68,6 +92,17 @@ ciclo ao mover.
 
 **Não há limite de sessões.** Nenhum ponto do código conta sessões para restringir; a
 contagem que aparece na barra lateral é informativa.
+
+### Transações não são opcionais
+
+No motor WASM cada commit custa um `fsync` de ~120 ms. Isso não aparece em uma escrita
+avulsa, mas destrói qualquer laço: gravar 500 sessões uma a uma levava **86 s**; as mesmas
+500 dentro de uma transação levam **~250 ms** — 340× mais rápido. Um import de 500 sessões
+caiu de 179 s para menos de um segundo pelo mesmo motivo.
+
+Por isso todo laço de escrita passa por `repo.tx(fn)`, e o teste de fumaça tem um teto de
+tempo explícito na inserção em lote: se alguém remover a transação, o teste falha em vez de
+o app ficar silenciosamente lento.
 
 ---
 
@@ -168,3 +203,5 @@ economizaria em código.
 | Novo campo de sessão | `session-dialog.js` (UI) → grava em `config` (JSON); nada de DDL |
 | Novo importador | `src/main/importers/` devolvendo `{folders, sessions, warnings}` + registrar em `portability.js` |
 | Novo tema embutido | `src/shared/themes.js` |
+| Gravar algo em lote | envolva em `repo.tx()` — veja a seção de transações |
+| Mudar onde os dados ficam | `src/main/paths.js` |

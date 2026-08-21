@@ -16,6 +16,9 @@ import {
   importDialog, exportDialog, shortcutsDialog, aboutDialog, applyUiTheme,
   lockVault, unlockVaultDialog
 } from './components/settings-dialog.js';
+import {
+  snippetsDialog, tunnelsDialog, sessionLogDialog, keysDialog
+} from './components/tools-dialog.js';
 
 // ------------------------------------------------------------ bootstrap ---
 async function boot() {
@@ -268,6 +271,13 @@ function tabMenu(e, pane) {
       hidden: !pane.session,
       onClick: () => editSession(pane.session)
     },
+    {
+      label: 'Tuneis…',
+      hidden: pane.type === 'shell' || pane.type === 'telnet',
+      onClick: () => tunnelsDialog(pane)
+    },
+    { label: 'Gravar sessao em arquivo…', onClick: () => sessionLogDialog(pane) },
+    { label: 'Biblioteca de comandos…', key: 'Ctrl+Shift+S', onClick: () => openSnippets() },
     { separator: true },
     { label: 'Fechar as outras', onClick: () => closeOthers(pane.id) },
     { label: 'Fechar aba', danger: true, key: 'Ctrl+W', onClick: () => closePane(pane.id) }
@@ -340,6 +350,23 @@ function toggleMultiExec() {
   $('#workspace').before(bar);
   state.multiExec = true;
   input.focus();
+}
+
+/** Abre a biblioteca de comandos ja ligada a aba ativa (ou a todas). */
+function openSnippets() {
+  return snippetsDialog({
+    onSend: (text, toAll) => {
+      if (toAll) {
+        const n = broadcast(text);
+        toast(`Enviado para ${n} sessao(oes)`, 'ok', 1600);
+        return;
+      }
+      const pane = activePane();
+      if (!pane || !pane.connectionId) return toast('Nenhuma aba conectada', 'warn');
+      window.tsm.conn.write(pane.connectionId, text);
+      toast(`Enviado para "${pane.name}"`, 'ok', 1600);
+    }
+  });
 }
 
 // ----------------------------------------------------------- paleta ------
@@ -420,6 +447,7 @@ function bindShortcuts() {
     const pane = activePane();
 
     if (e.shiftKey && key === 'm') { e.preventDefault(); toggleMultiExec(); return; }
+    if (e.shiftKey && key === 's') { e.preventDefault(); openSnippets(); return; }
     if (key === 'tab') {
       e.preventDefault();
       if (!state.panes.length) return;
@@ -476,6 +504,12 @@ function bindMenu() {
         const res = await window.tsm.io.backupDb();
         if (!res.canceled) toast(`Backup salvo em ${res.filePath}`, 'ok');
       });
+      case 'snippets': return openSnippets();
+      case 'multiexec': return toggleMultiExec();
+      case 'opendata': return window.tsm.app.showItemInFolder(state.info.dbPath);
+      case 'tunnels': return tunnelsDialog(pane);
+      case 'sessionlog': return sessionLogDialog(pane);
+      case 'keys': return keysDialog();
       case 'vault:lock': return lockVault();
       case 'help:shortcuts': return shortcutsDialog();
       case 'help:about': return aboutDialog();

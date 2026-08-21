@@ -1,45 +1,68 @@
 appId: com.diegocarlesso.tsm
 productName: Total Session Manager
 copyright: Copyright (c) 2026 Diego Carlesso
+
 directories:
   output: dist
   buildResources: build
+
 files:
   - src/**/*
-  - "!src/renderer/app.js.map"
+  - "!src/renderer/app.bundle.js.map"
   - package.json
+
 asarUnpack:
   - "**/node_modules/@lydell/node-pty*/**"
   - "**/node_modules/node-sqlite3-wasm/**"
   - "**/node_modules/better-sqlite3/**"
+
+# O TSM e portatil: nada de instalador, nada de registro do Windows.
+# `dir`      -> pasta pronta com o executavel e os arquivos de apoio
+# `portable` -> um unico .exe que se auto-extrai e roda
+# `AppImage` -> um unico arquivo executavel no Linux
 win:
   target:
-    - target: nsis
+    - target: dir
       arch: [x64, arm64]
     - target: portable
       arch: [x64]
   artifactName: TSM-${version}-${arch}.${ext}
-nsis:
-  oneClick: false
-  perMachine: false
-  allowToChangeInstallationDirectory: true
-  shortcutName: Total Session Manager
+
+portable:
+  artifactName: TSM-${version}-portable-${arch}.exe
+  unpackDirName: TSM
+  # Sem atalhos, sem escrever em Program Files.
+  requestExecutionLevel: user
+
 linux:
   target:
-    - AppImage
-    - deb
-    - rpm
-    - tar.gz
+    - target: dir
+      arch: [x64, arm64]
+    - target: AppImage
+      arch: [x64, arm64]
+    - target: tar.gz
+      arch: [x64]
   category: Network
   maintainer: Diego Carlesso
   synopsis: Gerenciador de sessoes SSH/Telnet/Shell/SFTP
+  artifactName: TSM-${version}-${arch}.${ext}
+
 mac:
   target:
-    - target: dmg
+    - target: dir
       arch: [x64, arm64]
     - target: zip
+      arch: [x64, arm64]
+    - target: dmg
       arch: [x64, arm64]
   category: public.app-category.developer-tools
   hardenedRuntime: true
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
+  artifactName: TSM-${version}-${arch}.${ext}
+
+dmg:
+  # O .dmg aqui e so um envelope para arrastar o .app para onde quiser —
+  # o app roda de qualquer pasta, inclusive de um pendrive.
+  artifactName: TSM-${version}-${arch}.dmg
+  writeUpdateInfo: false

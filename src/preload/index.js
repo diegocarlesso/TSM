@@ -96,13 +96,36 @@ contextBridge.exposeInMainWorld('tsm', {
     answerPrompt: (id, promptId, value) => call('tsm:conn:answerPrompt', id, promptId, value),
     answerHostKey: (id, accept) => call('tsm:conn:answerHostKey', id, accept),
 
+    startLog: (id, options) => call('tsm:conn:startLog', id, options),
+    stopLog: (id) => call('tsm:conn:stopLog', id),
+    logStatus: (id) => call('tsm:conn:logStatus', id),
+
+    forwards: (id) => call('tsm:conn:forwards', id),
+    addForward: (id, spec) => call('tsm:conn:addForward', id, spec),
+    removeForward: (id, forwardId) => call('tsm:conn:removeForward', id, forwardId),
+
     onData: (h) => on('tsm:conn:data', h),
     onReady: (h) => on('tsm:conn:ready', h),
     onClose: (h) => on('tsm:conn:close', h),
     onError: (h) => on('tsm:conn:error', h),
     onStatus: (h) => on('tsm:conn:status', h),
     onPrompt: (h) => on('tsm:conn:prompt', h),
-    onHostKey: (h) => on('tsm:conn:hostkey', h)
+    onHostKey: (h) => on('tsm:conn:hostkey', h),
+    onForwards: (h) => on('tsm:conn:forwards', h)
+  },
+
+  snippets: {
+    list: () => call('tsm:snippets:list'),
+    create: (input) => call('tsm:snippets:create', input),
+    update: (id, patch) => call('tsm:snippets:update', id, patch),
+    remove: (id) => call('tsm:snippets:remove', id)
+  },
+
+  keys: {
+    list: () => call('tsm:keys:list'),
+    generate: (options) => call('tsm:keys:generate', options),
+    inspect: (filePath, passphrase) => call('tsm:keys:inspect', filePath, passphrase),
+    types: () => call('tsm:keys:types')
   },
 
   sftp: {
@@ -132,7 +155,8 @@ contextBridge.exposeInMainWorld('tsm', {
     knownHosts: () => call('tsm:knownhosts:list'),
     forgetHost: (host, port, keyType) => call('tsm:knownhosts:remove', host, port, keyType),
     log: (n) => call('tsm:log:recent', n),
-    clearLog: () => call('tsm:log:clear')
+    clearLog: () => call('tsm:log:clear'),
+    logsDir: () => call('tsm:log:defaultDir')
   },
 
   menu: {

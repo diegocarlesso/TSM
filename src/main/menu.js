@@ -43,6 +43,7 @@ function build(win) {
         { label: 'Importar sessoes...', click: () => send(win, 'import') },
         { label: 'Exportar sessoes...', click: () => send(win, 'export') },
         { label: 'Backup do banco...', click: () => send(win, 'backup') },
+        { label: 'Abrir a pasta de dados', click: () => send(win, 'opendata') },
         ...(isMac ? [] : [{ type: 'separator' }, { role: 'quit', label: 'Sair' }])
       ]
     },
@@ -82,11 +83,17 @@ function build(win) {
     {
       label: 'Fe&rramentas',
       submenu: [
-        { label: 'Configuracoes...', accelerator: 'CmdOrCtrl+,', click: () => send(win, 'settings') },
+        { label: 'Biblioteca de comandos...', accelerator: 'CmdOrCtrl+Shift+S', click: () => send(win, 'snippets') },
+        { label: 'Tuneis da sessao...', click: () => send(win, 'tunnels') },
+        { label: 'Gravar sessao em arquivo...', click: () => send(win, 'sessionlog') },
+        { label: 'MultiExec', accelerator: 'CmdOrCtrl+Shift+M', click: () => send(win, 'multiexec') },
+        { type: 'separator' },
+        { label: 'Chaves SSH...', click: () => send(win, 'keys') },
         { label: 'Credenciais salvas...', click: () => send(win, 'identities') },
         { label: 'Chaves de host conhecidas...', click: () => send(win, 'knownhosts') },
         { label: 'Historico de conexoes...', click: () => send(win, 'history') },
         { type: 'separator' },
+        { label: 'Configuracoes...', accelerator: 'CmdOrCtrl+,', click: () => send(win, 'settings') },
         { label: 'Bloquear cofre', accelerator: 'CmdOrCtrl+L', click: () => send(win, 'vault:lock') }
       ]
     },

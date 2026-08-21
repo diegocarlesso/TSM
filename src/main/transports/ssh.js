@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const net = require('node:net');
+const crypto = require('node:crypto');
 const { EventEmitter } = require('node:events');
 const { Client } = require('ssh2');
 const repo = require('../store/repo');
@@ -117,7 +118,6 @@ class SshConnection extends EventEmitter {
   }
 
   _verifyHostKey(key, callback) {
-    const crypto = require('node:crypto');
     const fingerprint = 'SHA256:' + crypto.createHash('sha256').update(key).digest('base64').replace(/=+$/, '');
     const host = this.config.host;
     const port = Number(this.config.port) || DEFAULT_PORT;
@@ -281,8 +281,8 @@ class SshConnection extends EventEmitter {
       try { this.jumpClient.end(); } catch { /* ja fechado */ }
       this.jumpClient = null;
     }
-    for (const srv of this.forwards) {
-      try { srv.close(); } catch { /* ja fechado */ }
+    for (const f of this.forwards) {
+      try { if (f.server) f.server.close(); } catch { /* ja fechado */ }
     }
     this.forwards = [];
   }
@@ -291,42 +291,103 @@ class SshConnection extends EventEmitter {
   _applyForwards() {
     for (const f of this.config.portForwards || []) {
       try {
-        if (f.type === 'local') this.addLocalForward(f);
-        else if (f.type === 'remote') this.addRemoteForward(f);
+        this.addForward(f);
       } catch (err) {
         this.emit('data', `\r\n\x1b[31m[TSM] tunel falhou: ${err.message}\x1b[0m\r\n`);
       }
     }
   }
 
-  addLocalForward({ localHost = '127.0.0.1', localPort, remoteHost, remotePort }) {
+  /** Abre um tunel e devolve o registro, para a UI poder lista-lo e remove-lo. */
+  addForward(spec) {
+    const entry = spec.type === 'remote'
+      ? this._addRemoteForward(spec)
+      : this._addLocalForward(spec);
+    this.forwards.push(entry);
+    this.emit('forwards', this.listForwards());
+    return entry;
+  }
+
+  listForwards() {
+    return this.forwards.map((f) => ({
+      id: f.id,
+      type: f.spec.type || 'local',
+      localHost: f.spec.localHost || '127.0.0.1',
+      localPort: f.spec.localPort,
+      remoteHost: f.spec.remoteHost,
+      remotePort: f.spec.remotePort,
+      status: f.status
+    }));
+  }
+
+  removeForward(id) {
+    const idx = this.forwards.findIndex((f) => f.id === id);
+    if (idx === -1) return false;
+    const [entry] = this.forwards.splice(idx, 1);
+    try {
+      if (entry.server) entry.server.close();
+      else if (entry.spec.type === 'remote') {
+        this.client.unforwardIn(entry.spec.remoteHost || '127.0.0.1', entry.spec.remotePort);
+      }
+    } catch { /* ja fechado */ }
+    if (entry.onTcp) this.client.removeListener('tcp connection', entry.onTcp);
+    this.emit('forwards', this.listForwards());
+    return true;
+  }
+
+  _addLocalForward(spec) {
+    const { localHost = '127.0.0.1', localPort, remoteHost, remotePort } = spec;
+    const entry = { id: crypto.randomUUID(), spec, status: 'abrindo', server: null };
+
     const server = net.createServer((socket) => {
       this.client.forwardOut(localHost, localPort, remoteHost, remotePort, (err, stream) => {
         if (err) { socket.destroy(); return; }
         socket.pipe(stream).pipe(socket);
       });
     });
+    entry.server = server;
+
     server.listen(localPort, localHost, () => {
+      entry.status = 'ativo';
+      this.emit('forwards', this.listForwards());
       this.emit('data',
         `\r\n\x1b[36m[TSM] tunel local ${localHost}:${localPort} -> ${remoteHost}:${remotePort}\x1b[0m\r\n`);
     });
-    server.on('error', (err) => this.emit('data', `\r\n\x1b[31m[TSM] ${err.message}\x1b[0m\r\n`));
-    this.forwards.push(server);
-    return server;
+    server.on('error', (err) => {
+      entry.status = `erro: ${err.message}`;
+      this.emit('forwards', this.listForwards());
+      this.emit('data', `\r\n\x1b[31m[TSM] tunel local ${localPort}: ${err.message}\x1b[0m\r\n`);
+    });
+    return entry;
   }
 
-  addRemoteForward({ remoteHost = '127.0.0.1', remotePort, localHost = '127.0.0.1', localPort }) {
+  _addRemoteForward(spec) {
+    const { remoteHost = '127.0.0.1', remotePort, localHost = '127.0.0.1', localPort } = spec;
+    const entry = { id: crypto.randomUUID(), spec, status: 'abrindo', server: null };
+
     this.client.forwardIn(remoteHost, remotePort, (err) => {
-      if (err) return this.emit('data', `\r\n\x1b[31m[TSM] ${err.message}\x1b[0m\r\n`);
+      if (err) {
+        entry.status = `erro: ${err.message}`;
+        this.emit('forwards', this.listForwards());
+        this.emit('data', `\r\n\x1b[31m[TSM] tunel remoto ${remotePort}: ${err.message}\x1b[0m\r\n`);
+        return;
+      }
+      entry.status = 'ativo';
+      this.emit('forwards', this.listForwards());
       this.emit('data',
         `\r\n\x1b[36m[TSM] tunel remoto ${remoteHost}:${remotePort} -> ${localHost}:${localPort}\x1b[0m\r\n`);
     });
-    this.client.on('tcp connection', (info, accept) => {
+
+    // Cada tunel remoto so atende o proprio destino. Guardamos o handler para
+    // poder remove-lo depois sem derrubar os outros tuneis da mesma conexao.
+    entry.onTcp = (info, accept) => {
       if (info.destPort !== remotePort) return;
       const stream = accept();
       const socket = net.connect(localPort, localHost, () => stream.pipe(socket).pipe(stream));
       socket.on('error', () => stream.end());
-    });
+    };
+    this.client.on('tcp connection', entry.onTcp);
+    return entry;
   }
 
   // ------------------------------------------------------------- controle --

@@ -1,26 +1,24 @@
 'use strict';
 const path = require('node:path');
 const fs = require('node:fs');
-const { app } = require('electron');
 
 let db = null;
 let dbPath = null;
 
 /**
- * Abre (ou cria) o banco de sessoes.
- * O arquivo fica em <userData>/tsm.db, salvo se o usuario apontar outro
- * diretorio via TSM_DATA_DIR (util para instalacao portatil em pendrive).
+ * Abre (ou cria) o banco de sessoes em `<pasta de dados>/tsm.db`.
+ * Quem decide a pasta e `paths.js`: por padrao `data/` ao lado do executavel
+ * (modo portatil), com o perfil do usuario como reserva.
  */
 function open() {
   if (db) return db;
 
   const sqlite = require('./sqlite');
-  const dataDir = process.env.TSM_DATA_DIR
-    ? path.resolve(process.env.TSM_DATA_DIR)
-    : app.getPath('userData');
+  const paths = require('../paths');
 
-  fs.mkdirSync(dataDir, { recursive: true });
-  dbPath = path.join(dataDir, 'tsm.db');
+  const dir = paths.dataDir();
+  fs.mkdirSync(dir, { recursive: true });
+  dbPath = path.join(dir, 'tsm.db');
 
   db = sqlite.open(dbPath);
   // WAL só existe no motor nativo; o VFS do WASM ignora e segue em `delete`.
@@ -155,6 +153,24 @@ const MIGRATIONS = [
         error      TEXT
       );
       CREATE INDEX idx_log_started ON connection_log(started_at DESC);
+    `);
+  },
+
+  // ---- v2: biblioteca de comandos e estado da area de trabalho ----------
+  (d) => {
+    d.exec(`
+      CREATE TABLE snippets (
+        id         TEXT PRIMARY KEY,
+        name       TEXT NOT NULL,
+        content    TEXT NOT NULL,
+        category   TEXT NOT NULL DEFAULT '',
+        shortcut   TEXT NOT NULL DEFAULT '',
+        run        INTEGER NOT NULL DEFAULT 1,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE INDEX idx_snippets_cat ON snippets(category, sort_order);
     `);
   }
 ];
