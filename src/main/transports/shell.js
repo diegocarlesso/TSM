@@ -8,12 +8,18 @@ const os = require('node:os');
 const fs = require('node:fs');
 const { EventEmitter } = require('node:events');
 
+// `@lydell/node-pty` distribui binarios Node-API prontos por plataforma, entao
+// instala sem node-gyp/Visual Studio. `node-pty` fica como segunda opcao para
+// quem ja tiver o modulo classico compilado.
 let pty = null;
 let ptyError = null;
-try {
-  pty = require('node-pty');
-} catch (err) {
-  ptyError = err;
+for (const candidate of ['@lydell/node-pty', 'node-pty']) {
+  try {
+    pty = require(candidate);
+    break;
+  } catch (err) {
+    ptyError = err;
+  }
 }
 
 function firstExisting(candidates) {

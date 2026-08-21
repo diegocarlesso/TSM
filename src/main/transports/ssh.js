@@ -182,6 +182,12 @@ class SshConnection extends EventEmitter {
 
     c.on('ready', () => {
       this.emit('status', 'autenticado');
+      if (this.config.noShell) {
+        // Sessao so de arquivos (tipo `sftp`): nao gastamos um canal de shell.
+        this.emit('ready');
+        this._applyForwards();
+        return;
+      }
       this._openShell();
     });
 

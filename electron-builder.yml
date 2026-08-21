@@ -9,7 +9,8 @@ files:
   - "!src/renderer/app.js.map"
   - package.json
 asarUnpack:
-  - "**/node_modules/node-pty/**"
+  - "**/node_modules/@lydell/node-pty*/**"
+  - "**/node_modules/node-sqlite3-wasm/**"
   - "**/node_modules/better-sqlite3/**"
 win:
   target:

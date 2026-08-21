@@ -85,7 +85,8 @@ async function create(sender, { sessionId, type, config: inlineConfig, secrets: 
     emit(sender, 'tsm:conn:ready', { id, meta });
     if (sessionId) repo.sessions.touch(sessionId);
   });
-  conn.on('prompt', (p) => emit(sender, 'tsm:conn:prompt', { id, ...p }));
+  // `p.id` e o id do prompt, distinto do id da conexao — nao achatar num objeto so.
+  conn.on('prompt', (p) => emit(sender, 'tsm:conn:prompt', { id, prompt: p }));
   conn.on('hostkey', (h) => emit(sender, 'tsm:conn:hostkey', { id, ...h }));
   conn.on('error', (err) => {
     repo.log.close(logId, 'error', err.message);

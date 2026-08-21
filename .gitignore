@@ -1,6 +1,63 @@
+# --- dependencias -----------------------------------------------------------
 node_modules/
+.pnpm-store/
+.npm/
+
+# --- artefatos de build -----------------------------------------------------
 dist/
+out/
+build/Release/
+release/
+*.node
+
+# bundle do renderer e assets copiados (gerados por npm run build:renderer)
 src/renderer/app.bundle.js
 src/renderer/app.bundle.js.map
-src/renderer/vendor/xterm.css
+src/renderer/vendor/
+
+# --- DADOS DO USUARIO: nunca versionar --------------------------------------
+# O banco carrega sessoes e o cofre de credenciais cifrado.
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+tsm.db*
+userdata/
+profile/
+
+# exports de sessoes (podem conter credenciais cifradas)
+*.tsm.json
+*.mxtsessions
+MobaXterm.ini
+
+# chaves e certificados
+*.pem
+*.key
+*.ppk
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+known_hosts
+
+# --- ambiente ---------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# --- editores / SO ----------------------------------------------------------
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- logs -------------------------------------------------------------------
 *.log
+npm-debug.log*
+yarn-error.log*
+logs/

@@ -8,23 +8,22 @@
   "main": "src/main/index.js",
   "scripts": {
     "start": "npm run build:renderer && electron .",
-    "dev": "npm run build:renderer -- --watch & electron .",
+    "dev": "node scripts/build-renderer.mjs --watch",
     "build:renderer": "node scripts/build-renderer.mjs",
-    "rebuild": "electron-builder install-app-deps",
-    "postinstall": "electron-builder install-app-deps",
     "dist": "npm run build:renderer && electron-builder",
     "dist:win": "npm run build:renderer && electron-builder --win",
     "dist:linux": "npm run build:renderer && electron-builder --linux",
-    "dist:mac": "npm run build:renderer && electron-builder --mac"
+    "dist:mac": "npm run build:renderer && electron-builder --mac",
+    "sqlite:native": "npm install better-sqlite3"
   },
   "dependencies": {
+    "@lydell/node-pty": "^1.2.0-beta.12",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-search": "^0.15.0",
     "@xterm/addon-unicode11": "^0.8.0",
     "@xterm/addon-web-links": "^0.11.0",
     "@xterm/xterm": "^5.5.0",
-    "better-sqlite3": "^11.5.0",
-    "node-pty": "^1.0.0",
+    "node-sqlite3-wasm": "^0.8.0",
     "ssh2": "^1.16.0"
   },
   "devDependencies": {

@@ -14,7 +14,7 @@ let dbPath = null;
 function open() {
   if (db) return db;
 
-  const Database = require('better-sqlite3');
+  const sqlite = require('./sqlite');
   const dataDir = process.env.TSM_DATA_DIR
     ? path.resolve(process.env.TSM_DATA_DIR)
     : app.getPath('userData');
@@ -22,13 +22,18 @@ function open() {
   fs.mkdirSync(dataDir, { recursive: true });
   dbPath = path.join(dataDir, 'tsm.db');
 
-  db = new Database(dbPath);
+  db = sqlite.open(dbPath);
+  // WAL só existe no motor nativo; o VFS do WASM ignora e segue em `delete`.
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
   db.pragma('synchronous = NORMAL');
 
   migrate(db);
   return db;
+}
+
+function engine() {
+  return db ? db.engine : require('./sqlite').activeEngine();
 }
 
 function get() {
@@ -165,4 +170,4 @@ function migrate(d) {
   }
 }
 
-module.exports = { open, get, close, getPath, backupTo };
+module.exports = { open, get, close, getPath, backupTo, engine };

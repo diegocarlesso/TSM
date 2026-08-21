@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'none'" />
+  <title>Total Session Manager</title>
+  <link rel="stylesheet" href="vendor/xterm.css" />
+  <link rel="stylesheet" href="styles/app.css" />
+</head>
+<body class="theme-dark">
+  <div id="app">
+    <!-- ------------------------------------------------------- sidebar -->
+    <aside id="sidebar">
+      <header class="sidebar-head">
+        <div class="brand">
+          <span class="brand-mark">TSM</span>
+          <span class="brand-sub">Total Session Manager</span>
+        </div>
+        <div class="sidebar-actions">
+          <button id="btn-new-session" class="icon-btn" title="Nova sessao (Ctrl+N)">＋</button>
+          <button id="btn-new-folder" class="icon-btn" title="Nova pasta (Ctrl+Shift+F)">🗀</button>
+          <button id="btn-import" class="icon-btn" title="Importar sessoes">⭳</button>
+          <button id="btn-export" class="icon-btn" title="Exportar sessoes">⭱</button>
+        </div>
+      </header>
+
+      <div class="search-row">
+        <input id="search" type="search" placeholder="Filtrar sessoes…" autocomplete="off" spellcheck="false" />
+      </div>
+
+      <nav id="tree" class="tree" tabindex="0"></nav>
+
+      <footer class="sidebar-foot">
+        <span id="session-count" class="muted">0 sessoes</span>
+        <span id="vault-state" class="badge" title="Estado do cofre de credenciais">cofre</span>
+      </footer>
+    </aside>
+
+    <div id="splitter" class="splitter" title="Arraste para redimensionar"></div>
+
+    <!-- ---------------------------------------------------------- main -->
+    <main id="main">
+      <div id="tabbar" class="tabbar">
+        <div id="tabs" class="tabs"></div>
+        <button id="btn-quick" class="tab-add" title="Conexao rapida (Ctrl+Shift+N)">＋</button>
+      </div>
+
+      <section id="workspace" class="workspace">
+        <div id="welcome" class="welcome">
+          <h1>Total Session Manager</h1>
+          <p class="muted">Sessoes ilimitadas. SSH · Telnet · Shell local · SFTP/SCP.</p>
+          <div class="welcome-actions">
+            <button class="primary" data-action="new-session">Nova sessao</button>
+            <button data-action="quick">Conexao rapida</button>
+            <button data-action="shell">Shell local</button>
+            <button data-action="import">Importar do MobaXterm / PuTTY</button>
+          </div>
+          <ul id="recent-list" class="recent"></ul>
+        </div>
+        <div id="panes" class="panes"></div>
+      </section>
+
+      <div id="statusbar" class="statusbar">
+        <span id="status-left" class="muted"></span>
+        <span id="status-right" class="muted"></span>
+      </div>
+    </main>
+
+    <!-- --------------------------------------------------- painel SFTP -->
+    <aside id="sftp-panel" class="sftp-panel hidden">
+      <header class="sftp-head">
+        <button id="sftp-up" class="icon-btn" title="Pasta acima">↑</button>
+        <input id="sftp-path" class="sftp-path" spellcheck="false" />
+        <button id="sftp-refresh" class="icon-btn" title="Atualizar">⟳</button>
+        <button id="sftp-upload" class="icon-btn" title="Enviar arquivos">⭱</button>
+        <button id="sftp-mkdir" class="icon-btn" title="Nova pasta">🗀</button>
+        <button id="sftp-close" class="icon-btn" title="Fechar painel">✕</button>
+      </header>
+      <div id="sftp-list" class="sftp-list"></div>
+      <footer id="sftp-status" class="sftp-status muted"></footer>
+    </aside>
+  </div>
+
+  <div id="modal-root"></div>
+  <div id="context-root"></div>
+  <div id="toast-root" class="toast-root"></div>
+
+  <script src="app.bundle.js"></script>
+</body>
+</html>
