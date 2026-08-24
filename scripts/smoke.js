@@ -133,6 +133,9 @@ check('cria pastas aninhadas', () => {
   assert(repo.folders.list().length === 2);
   assert(repo.folders.find(f2.id).parent_id === f1.id);
 });
+check('pasta nova nasce fechada', () => {
+  assert(f1.expanded === false, `expanded = ${f1.expanded}`);
+});
 check('impede ciclo ao mover pasta para dentro da própria subárvore', () => {
   try {
     repo.folders.update(f1.id, { parentId: f2.id });

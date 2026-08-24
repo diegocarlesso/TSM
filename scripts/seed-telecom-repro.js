@@ -70,6 +70,9 @@ repo.tx(() => {
   repo.settings.set('connection.confirmClose', false);
 
   const telecom = repo.folders.create({ name: '1TELECOM' });
+  // Pastas nascem fechadas por padrão; este seed simula uma pasta que o
+  // usuário já abriu, para exercitar rolagem/rótulo com muitas sessões visíveis.
+  repo.folders.update(telecom.id, { expanded: true });
   let i = 0;
   // Repete a base ~3x com IPs variados até passar de 50 — o relato original
   // era de 34 sessões numa pasta só, sem barra de rolagem.

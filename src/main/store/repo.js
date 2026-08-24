@@ -49,7 +49,7 @@ const folders = {
     const order = sortOrder ?? nextOrder('folders', 'parent_id', parentId);
     db.get().prepare(
       `INSERT INTO folders (id, parent_id, name, sort_order, color, icon, expanded, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)`
     ).run(newId, parentId, name, order, color, icon, t, t);
     return folders.find(newId);
   },
