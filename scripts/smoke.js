@@ -729,6 +729,141 @@ check(
   }
 );
 
+console.log('\n[aviso de nova versão]');
+const updateCheck = require('../src/main/update-check');
+
+check('compareVersions ordena por partes numéricas', () => {
+  assert(updateCheck.compareVersions('1.3.2', '1.3.2') === 0, 'iguais deveriam dar 0');
+  assert(updateCheck.compareVersions('1.3.2', '1.3.3') === -1, 'patch menor deveria dar -1');
+  assert(updateCheck.compareVersions('1.4.0', '1.3.9') === 1, 'minor maior deveria dar 1');
+  assert(updateCheck.compareVersions('2.0.0', '10.0.0') === -1, 'comparou como texto, não como número');
+});
+check('compareVersions aceita o prefixo v da tag do GitHub', () => {
+  assert(updateCheck.compareVersions('v1.3.2', '1.3.2') === 0);
+  assert(updateCheck.compareVersions('v1.3.2', 'V1.4.0') === -1);
+});
+check('compareVersions ignora sufixo de pré-lançamento e partes ausentes', () => {
+  // Decisão: `1.3.2-beta` é tratado como `1.3.2` — igual, não menor. O objetivo
+  // é só decidir "existe algo mais novo publicado?", e um release marcado
+  // `1.3.2-beta` no GitHub carrega as mesmas correções do `1.3.2`. Semver de
+  // verdade diria que a pré-versão é menor; aqui isso só geraria um aviso
+  // "atualize" para quem já está na versão final.
+  assert(updateCheck.compareVersions('1.3.2-beta', '1.3.2') === 0, 'sufixo deveria ser ignorado');
+  assert(updateCheck.compareVersions('1.4', '1.4.0') === 0, 'parte ausente deveria valer 0');
+  assert(updateCheck.compareVersions('1.4.1', '1.4') === 1);
+});
+
+/**
+ * Troca `global.fetch` por um duplo, roda o corpo e devolve o original —
+ * inclusive quando o corpo estoura, para não vazar o duplo nos testes seguintes.
+ */
+async function comFetchFalso(fake, fn) {
+  const original = global.fetch;
+  global.fetch = fake;
+  try {
+    return await fn();
+  } finally {
+    global.fetch = original;
+  }
+}
+
+const okResponse = (tag) => ({
+  ok: true,
+  status: 200,
+  json: async () => ({ tag_name: tag, html_url: `https://github.com/diegocarlesso/TSM/releases/tag/${tag}` })
+});
+
+checkAsync('aviso de nova versão', 'force consulta a rede e detecta versão mais nova', async () => {
+  let chamadas = 0;
+  const r = await comFetchFalso(async (url, init) => {
+    chamadas++;
+    assert(/api\.github\.com\/repos\/diegocarlesso\/TSM\/releases\/latest$/.test(url), String(url));
+    // A API do GitHub recusa requisição sem User-Agent.
+    assert(init && init.headers && init.headers['User-Agent'], 'não mandou User-Agent');
+    return okResponse('v9.9.9');
+  }, () => updateCheck.checkForUpdate({ force: true }));
+
+  assert(chamadas === 1, `chamou fetch ${chamadas} vez(es)`);
+  // O duplo do electron reporta 1.0.0 como versão do app.
+  assert(r.current === '1.0.0', r.current);
+  assert(r.latest === 'v9.9.9', r.latest);
+  assert(r.hasUpdate === true, JSON.stringify(r));
+  assert(r.url.includes('/releases/tag/v9.9.9'), r.url);
+  assert(typeof r.checkedAt === 'number' && r.checkedAt > 0, String(r.checkedAt));
+  assert(repo.settings.get('update.lastResult').latest === 'v9.9.9');
+});
+
+checkAsync('aviso de nova versão', 'versão igual à instalada não vira aviso', async () => {
+  const r = await comFetchFalso(
+    async () => okResponse('v1.0.0'),
+    () => updateCheck.checkForUpdate({ force: true })
+  );
+  assert(r.hasUpdate === false, JSON.stringify(r));
+  assert(r.latest === 'v1.0.0', r.latest);
+});
+
+checkAsync('aviso de nova versão', 'segunda consulta em menos de 24h vem do cache, sem rede', async () => {
+  repo.settings.set('update.lastCheckAt', 0);
+  let chamadas = 0;
+
+  const primeira = await comFetchFalso(async () => {
+    chamadas++;
+    return okResponse('v2.5.0');
+  }, () => updateCheck.checkForUpdate());
+  assert(chamadas === 1, `a primeira chamada usou fetch ${chamadas} vez(es)`);
+  assert(primeira.hasUpdate === true && primeira.cached === undefined, JSON.stringify(primeira));
+
+  // Agora qualquer toque na rede é falha do teste.
+  const segunda = await comFetchFalso(async () => {
+    throw new Error('bateu na rede de novo em vez de usar o cache');
+  }, () => updateCheck.checkForUpdate());
+
+  assert(segunda.cached === true, JSON.stringify(segunda));
+  assert(segunda.latest === 'v2.5.0' && segunda.hasUpdate === true, JSON.stringify(segunda));
+  assert(segunda.checkedAt === primeira.checkedAt, 'o cache deveria manter o carimbo da consulta real');
+});
+
+checkAsync('aviso de nova versão', 'falha de rede devolve error e não queima as 24h', async () => {
+  repo.settings.set('update.lastCheckAt', 0);
+  const r = await comFetchFalso(
+    async () => { throw new Error('getaddrinfo ENOTFOUND api.github.com'); },
+    () => updateCheck.checkForUpdate({ force: true })
+  );
+  assert(r.error === true, JSON.stringify(r));
+  assert(repo.settings.get('update.lastCheckAt') === 0, 'marcou lastCheckAt depois de falhar');
+});
+
+checkAsync('aviso de nova versão', 'HTTP 403 (rate limit) também é tratado como falha silenciosa', async () => {
+  repo.settings.set('update.lastCheckAt', 0);
+  const r = await comFetchFalso(
+    async () => ({ ok: false, status: 403, json: async () => ({}) }),
+    () => updateCheck.checkForUpdate({ force: true })
+  );
+  assert(r.error === true, JSON.stringify(r));
+  assert(repo.settings.get('update.lastCheckAt') === 0, 'marcou lastCheckAt depois de um 403');
+});
+
+checkAsync('aviso de nova versão', 'desligado nas preferências não consulta nada', async () => {
+  repo.settings.set('update.checkEnabled', false);
+  repo.settings.set('update.lastCheckAt', 0);
+  try {
+    const r = await comFetchFalso(
+      async () => { throw new Error('consultou mesmo com a verificação desligada'); },
+      () => updateCheck.checkForUpdate()
+    );
+    assert(r.skipped === true, JSON.stringify(r));
+
+    // ...mas o "Verificar agora" do usuário continua valendo.
+    const forcado = await comFetchFalso(
+      async () => okResponse('v3.0.0'),
+      () => updateCheck.checkForUpdate({ force: true })
+    );
+    assert(forcado.hasUpdate === true && forcado.latest === 'v3.0.0', JSON.stringify(forcado));
+  } finally {
+    repo.settings.set('update.checkEnabled', true);
+  }
+});
+
 checkAsync('backup', 'gera copia do banco', async () => {
   const dest = path.join(tmp, 'backup.db');
   await db.get().backup(dest);

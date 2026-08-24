@@ -110,6 +110,11 @@ function register() {
   handle('tsm:settings:set', (_e, key, value) => repo.settings.set(key, value));
   handle('tsm:settings:merge', (_e, patch) => repo.settings.merge(patch));
 
+  // ---------------------------------------------------- nova versão -------
+  // A consulta acontece só aqui, no main: o renderer segue com `connect-src
+  // 'none'` e nenhum dado do usuário sai da máquina.
+  handle('tsm:update:check', (_e, opts) => require('./update-check').checkForUpdate(opts || {}));
+
   handle('tsm:themes:list', () => ({ terminal: repo.themes.list(), ui: UI_THEMES }));
   handle('tsm:themes:upsert', (_e, theme) => repo.themes.upsert(theme));
   handle('tsm:themes:remove', (_e, id) => { repo.themes.remove(id); return true; });

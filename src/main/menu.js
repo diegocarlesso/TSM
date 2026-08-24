@@ -109,6 +109,7 @@ function build(win) {
       submenu: [
         { label: 'Atalhos de teclado', click: () => send(win, 'help:shortcuts') },
         { label: 'Repositório do projeto', click: () => shell.openExternal('https://github.com/diegocarlesso/TSM') },
+        { label: 'Verificar atualizações...', click: () => send(win, 'update:check') },
         { label: 'Sobre o TSM', click: () => send(win, 'help:about') }
       ]
     }

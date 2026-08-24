@@ -16,7 +16,7 @@ import { sessionDialog, quickConnectDialog } from './components/session-dialog.j
 import {
   settingsDialog, themeEditor, identitiesDialog, knownHostsDialog, historyDialog,
   importDialog, exportDialog, shortcutsDialog, aboutDialog, applyUiTheme,
-  lockVault, unlockVaultDialog
+  lockVault, unlockVaultDialog, checkForUpdateNow, updateVersionLabel
 } from './components/settings-dialog.js';
 import {
   snippetsDialog, tunnelsDialog, sessionLogDialog, keysDialog, automationsDialog
@@ -38,6 +38,9 @@ async function boot() {
   bindUi();
   bindShortcuts();
   bindMenu();
+
+  // O main avisa sozinho, uma vez por dia, quando existe versão mais nova.
+  window.tsm.update.onAvailable((result) => showUpdateBadge(result));
 
   initTree({
     onOpenSession: openSession,
@@ -737,11 +740,44 @@ function bindMenu() {
       case 'sessionlog': return sessionLogDialog(pane);
       case 'keys': return keysDialog();
       case 'vault:lock': return lockVault();
+      case 'update:check': return checkUpdateFromMenu();
       case 'help:shortcuts': return shortcutsDialog();
       case 'help:about': return aboutDialog();
       default: return undefined;
     }
   });
+}
+
+// ------------------------------------------------------- nova versão ------
+/**
+ * Aviso discreto no rodapé da barra lateral, no mesmo formato do badge do cofre.
+ * Não é dispensável: some sozinho na próxima abertura, se já não houver versão
+ * nova. Clicar abre a página do release no navegador (o main é que abre; o
+ * renderer nunca navega para fora).
+ */
+function showUpdateBadge(result) {
+  if (!result || !result.latest) return;
+  const foot = $('.sidebar-foot');
+  if (!foot) return;
+
+  let badge = $('#update-state');
+  if (!badge) {
+    badge = el('span', { id: 'update-state', class: 'badge update' });
+    badge.addEventListener('click', () => {
+      if (badge.dataset.url) window.tsm.app.openExternal(badge.dataset.url);
+    });
+    foot.append(badge);
+  }
+  badge.dataset.url = result.url || '';
+  badge.textContent = `${updateVersionLabel(result.latest)} disponível`;
+  badge.title = `Você está na ${updateVersionLabel(result.current)}. `
+    + 'Clique para abrir a página da nova versão.';
+}
+
+/** Item "Verificar atualizações..." do menu Ajuda: mesma checagem do diálogo. */
+async function checkUpdateFromMenu() {
+  const r = await checkForUpdateNow();
+  if (r && r.hasUpdate) showUpdateBadge(r);
 }
 
 function renderVaultBadge() {

@@ -139,7 +139,8 @@ const DEFAULT_SETTINGS = {
   'terminal.wordSeparators': ' ()[]{}\'",;:│',
   'connection.confirmClose': true,
   'connection.reconnectOnDrop': false,
-  'security.lockOnMinimize': false
+  'security.lockOnMinimize': false,
+  'update.checkEnabled': true
 };
 
 module.exports = { BUILTIN_THEMES, UI_THEMES, DEFAULT_SETTINGS };

@@ -208,6 +208,7 @@ button, input, select, textarea {
 }
 .badge.locked { color: var(--warn); border-color: var(--warn); }
 .badge.open { color: var(--ok); border-color: var(--ok); }
+.badge.update { color: var(--accent); border-color: var(--accent); }
 
 /* ------------------------------------------------------------ splitter -- */
 .splitter { cursor: col-resize; background: transparent; }

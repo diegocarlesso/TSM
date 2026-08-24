@@ -141,6 +141,14 @@ export async function settingsDialog(initialTab = 'aparência') {
       full(checkbox('Reconectar automaticamente quando a conexão cair',
         draft['connection.reconnectOnDrop'], (v) => commit('connection.reconnectOnDrop', v)));
       grid.append(el('div', { class: 'full' }, [el('hr', { style: 'border-color:var(--border)' })]));
+      full(checkbox('Verificar atualizações automaticamente (uma vez por dia)',
+        draft['update.checkEnabled'] !== false, (v) => commit('update.checkEnabled', v)));
+      full(el('button', { text: 'Verificar agora', onClick: () => checkForUpdateNow() }));
+      grid.append(el('div', { class: 'hint full' }, [
+        'A consulta sai do processo principal e pergunta ao GitHub só qual é a última versão publicada. '
+        + 'Nenhum dado seu é enviado.'
+      ]));
+      grid.append(el('div', { class: 'full' }, [el('hr', { style: 'border-color:var(--border)' })]));
       full(el('button', { text: 'Chaves de host conhecidas…', onClick: () => knownHostsDialog() }));
       full(el('button', { text: 'Histórico de conexões…', onClick: () => historyDialog() }));
     }
@@ -239,6 +247,31 @@ function themePreview(themeId, prefs = {}) {
       `${line(d.red, 'erro:')} falha ao conectar  ${line(d.yellow, 'aviso:')} tentando de novo`,
       `${line(d.magenta, 'DEBUG')} pool=12 idle=3  ${line(d.brightGreen, 'OK')} 200`
     ].join('\n')
+  });
+}
+
+// ------------------------------------------------------ nova versão -------
+/** `1.3.2` e `v1.3.2` viram sempre `v1.3.2` — a tag do GitHub já pode vir com o v. */
+export const updateVersionLabel = (v) => `v${String(v ?? '').replace(/^v/i, '')}`;
+
+/**
+ * Consulta forçada, usada pelo botão das Configurações e pelo item do menu
+ * Ajuda. Fica aqui num lugar só para os dois caminhos não divergirem.
+ */
+export async function checkForUpdateNow() {
+  return guard(async () => {
+    const r = await window.tsm.update.check({ force: true });
+    if (!r || r.error) {
+      toast('Não deu para verificar agora — sem conexão?', 'err');
+      return r;
+    }
+    toast(
+      r.hasUpdate
+        ? `Nova versão ${updateVersionLabel(r.latest)} disponível`
+        : 'Você já está na última versão',
+      'ok'
+    );
+    return r;
   });
 }
 

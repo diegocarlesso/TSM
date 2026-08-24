@@ -80,6 +80,11 @@ contextBridge.exposeInMainWorld('tsm', {
     merge: (patch) => call('tsm:settings:merge', patch)
   },
 
+  update: {
+    check: (opts) => call('tsm:update:check', opts),
+    onAvailable: (h) => on('tsm:update:available', h)
+  },
+
   themes: {
     list: () => call('tsm:themes:list'),
     upsert: (theme) => call('tsm:themes:upsert', theme),

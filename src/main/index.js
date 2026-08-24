@@ -151,6 +151,38 @@ function createWindow() {
 
   menu.install(mainWindow);
   mainWindow.on('closed', () => { mainWindow = null; });
+
+  scheduleUpdateCheck();
+}
+
+/**
+ * Olhada de baixa prioridade no GitHub Releases. Os 3 segundos de atraso são de
+ * propósito: o carregamento da interface tem prioridade e este aviso pode chegar
+ * quando chegar. Erro de rede não aparece para o usuário — só um badge quando
+ * existe versão nova de verdade.
+ *
+ * A contagem começa no `did-finish-load`, e não na criação da janela: este é um
+ * `send` sem fila do lado de lá, então avisar antes de o renderer assinar o
+ * evento simplesmente perde a mensagem — foi o que aconteceu num teste com o
+ * atraso encurtado.
+ *
+ * Nos testes automatizados (`TSM_SMOKE`/`TSM_UITEST`) o timer nem é armado: eles
+ * não devem depender de rede nem sujar o banco temporário com `update.*`.
+ */
+function scheduleUpdateCheck() {
+  if (process.env.TSM_SMOKE || process.env.TSM_UITEST) return;
+  mainWindow.webContents.once('did-finish-load', () => {
+    const timer = setTimeout(() => {
+      require('./update-check').checkForUpdate()
+        .then((result) => {
+          if (result && result.hasUpdate && mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('tsm:update:available', result);
+          }
+        })
+        .catch(() => { /* já tratado lá dentro; nunca incomoda o usuário */ });
+    }, 3000);
+    timer.unref();
+  });
 }
 
 function debounce(fn, ms) {
