@@ -252,7 +252,15 @@ button, input, select, textarea {
 .tab-add:hover { color: var(--text); background: var(--bg-hover); }
 
 .workspace { flex: 1; position: relative; min-height: 0; }
-.panes { position: absolute; inset: 0; }
+/*
+ * #panes fica vazio (sem abas) exatamente quando a tela de boas-vindas
+ * aparece por baixo dele — e mesmo vazio, um <div> absoluto cobrindo toda a
+ * área intercepta clique normalmente, então os botões da tela inicial nunca
+ * recebiam o evento. pointer-events volta a 'auto' assim que há conteúdo
+ * (regra abaixo), então painéis abertos continuam clicáveis como sempre.
+ */
+.panes { position: absolute; inset: 0; pointer-events: none; }
+.panes:has(.tab-view) { pointer-events: auto; }
 
 .pane .term-host { flex: 1; min-height: 0; padding: 4px 0 0 6px; }
 

@@ -343,6 +343,14 @@ continua legível ao lado do host/usuário, e que "Editar…" no menu de context
 diálogo com os dados certos.
 
 ```bash
+TSM_SMOKE=1 TSM_UITEST=scripts/uitest-welcome-repro.js npx electron .
+```
+
+Confere, num banco vazio (sem sessões, sem abas — o estado em que a tela inicial aparece),
+que um clique no ponto exato do botão "Nova sessão" chega até o botão em vez de ser
+interceptado pelo `#panes` vazio por cima dele, e que o diálogo abre de verdade.
+
+```bash
 TSM_DATA_DIR=./serial node scripts/seed-serial.js
 ```
 
