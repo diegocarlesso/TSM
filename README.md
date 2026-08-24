@@ -12,16 +12,16 @@ reutiliza, modifica nem contorna nada do produto da Mobatek.
 
 ## Download
 
-Última versão: [**v1.3.0**](https://github.com/diegocarlesso/TSM/releases/tag/v1.3.0) — nenhum instalador, é só baixar e rodar.
+Última versão: [**v1.3.1**](https://github.com/diegocarlesso/TSM/releases/tag/v1.3.1) — nenhum instalador, é só baixar e rodar.
 
 | Sistema | Arquivo | Como usar |
 |---|---|---|
-| Windows | [TSM-1.3.0-win-x64.zip](https://github.com/diegocarlesso/TSM/releases/download/v1.3.0/TSM-1.3.0-win-x64.zip) | **Recomendado.** Extraia uma vez, abre na hora dali em diante. |
-| Windows | [TSM-1.3.0-win-portable-x64.exe](https://github.com/diegocarlesso/TSM/releases/download/v1.3.0/TSM-1.3.0-win-portable-x64.exe) | Executável único, mais lento para abrir (autoextrai a cada execução). |
-| Linux | [TSM-1.3.0-linux-x86_64.AppImage](https://github.com/diegocarlesso/TSM/releases/download/v1.3.0/TSM-1.3.0-linux-x86_64.AppImage) | `chmod +x` e execute. |
-| Linux | [TSM-1.3.0-linux-x64.tar.gz](https://github.com/diegocarlesso/TSM/releases/download/v1.3.0/TSM-1.3.0-linux-x64.tar.gz) | Pasta com o binário, se preferir extrair. |
-| macOS (Apple Silicon) | [TSM-1.3.0-mac-arm64.dmg](https://github.com/diegocarlesso/TSM/releases/download/v1.3.0/TSM-1.3.0-mac-arm64.dmg) | M1/M2/M3/M4. |
-| macOS (Intel) | [TSM-1.3.0-mac-x64.dmg](https://github.com/diegocarlesso/TSM/releases/download/v1.3.0/TSM-1.3.0-mac-x64.dmg) | Macs Intel. |
+| Windows | [TSM-1.3.1-win-x64.zip](https://github.com/diegocarlesso/TSM/releases/download/v1.3.1/TSM-1.3.1-win-x64.zip) | **Recomendado.** Extraia uma vez, abre na hora dali em diante. |
+| Windows | [TSM-1.3.1-win-portable-x64.exe](https://github.com/diegocarlesso/TSM/releases/download/v1.3.1/TSM-1.3.1-win-portable-x64.exe) | Executável único, mais lento para abrir (autoextrai a cada execução). |
+| Linux | [TSM-1.3.1-linux-x86_64.AppImage](https://github.com/diegocarlesso/TSM/releases/download/v1.3.1/TSM-1.3.1-linux-x86_64.AppImage) | `chmod +x` e execute. |
+| Linux | [TSM-1.3.1-linux-x64.tar.gz](https://github.com/diegocarlesso/TSM/releases/download/v1.3.1/TSM-1.3.1-linux-x64.tar.gz) | Pasta com o binário, se preferir extrair. |
+| macOS (Apple Silicon) | [TSM-1.3.1-mac-arm64.dmg](https://github.com/diegocarlesso/TSM/releases/download/v1.3.1/TSM-1.3.1-mac-arm64.dmg) | M1/M2/M3/M4. |
+| macOS (Intel) | [TSM-1.3.1-mac-x64.dmg](https://github.com/diegocarlesso/TSM/releases/download/v1.3.1/TSM-1.3.1-mac-x64.dmg) | Macs Intel. |
 
 > **macOS:** binários sem assinatura (o projeto não tem certificado Apple). Na primeira abertura: botão direito no app → **Abrir** → **Abrir**.
 > **Windows:** o `.exe` portátil é um autoextraível — ele descompacta para uma pasta temporária a cada execução, o que o torna mais lento para abrir e mais sujeito a alertas do SmartScreen/Defender do que um binário assinado. Veja [Empacotamento (portátil)](#empacotamento-portátil) para a alternativa em pasta, mais rápida.
@@ -178,9 +178,9 @@ O que sai em `dist/`:
 | Plataforma | Artefato | Como usar |
 |---|---|---|
 | Windows | `win-unpacked/` | Pasta pronta com `Total Session Manager.exe` e os arquivos de apoio. Copie a pasta inteira e execute. |
-| Windows | `TSM-1.3.0-win-x64.zip` | **Recomendado.** Mesma pasta do `win-unpacked`, zipada. Extraia uma vez e o app abre na hora dali em diante. |
-| Windows | `TSM-1.3.0-win-portable-x64.exe` | Executável único (~86 MB), no estilo do MobaXterm Portable. Mais conveniente para levar num pendrive, mas mais lento: é um autoextraível NSIS que descompacta tudo para uma pasta temporária **toda vez que abre** — isso soma alguns segundos de espera e é parte do motivo dele chamar mais atenção do SmartScreen/Defender. |
-| Linux | `TSM-1.3.0-linux-x86_64.AppImage` | Um arquivo só: `chmod +x` e execute. |
+| Windows | `TSM-1.3.1-win-x64.zip` | **Recomendado.** Mesma pasta do `win-unpacked`, zipada. Extraia uma vez e o app abre na hora dali em diante. |
+| Windows | `TSM-1.3.1-win-portable-x64.exe` | Executável único (~86 MB), no estilo do MobaXterm Portable. Mais conveniente para levar num pendrive, mas mais lento: é um autoextraível NSIS que descompacta tudo para uma pasta temporária **toda vez que abre** — isso soma alguns segundos de espera e é parte do motivo dele chamar mais atenção do SmartScreen/Defender. |
+| Linux | `TSM-1.3.1-linux-x86_64.AppImage` | Um arquivo só: `chmod +x` e execute. |
 | Linux | `linux-unpacked/`, `.tar.gz` | Pasta com o binário e as bibliotecas. |
 | macOS | `mac/Total Session Manager.app` | Arraste para onde quiser e abra. |
 | macOS | `.dmg` / `.zip` | Envelope para distribuir o `.app`. |
@@ -354,6 +354,16 @@ TSM_SMOKE=1 TSM_UITEST=scripts/uitest-welcome-repro.js npx electron .
 Confere, num banco vazio (sem sessões, sem abas — o estado em que a tela inicial aparece),
 que um clique no ponto exato do botão "Nova sessão" chega até o botão em vez de ser
 interceptado pelo `#panes` vazio por cima dele, e que o diálogo abre de verdade.
+
+```bash
+TSM_DATA_DIR=./demo node scripts/seed-demo.js
+TSM_SMOKE=1 TSM_UITEST=scripts/uitest-tree-bug.js TSM_DATA_DIR=./demo npx electron .
+```
+
+Com várias pastas abertas, confere que clicar numa não muda o estado de nenhuma outra
+(reproduz um bug real onde um clique colapsava pastas sem relação nenhuma) e que "Conectar"
+no menu de contexto de uma sessão abre uma aba de verdade, com clique simulado no ponto real
+do item (não `.click()` direto no nó).
 
 ```bash
 TSM_SMOKE=1 TSM_UITEST=scripts/uitest-automations.js npx electron .
