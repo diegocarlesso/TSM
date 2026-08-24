@@ -192,10 +192,27 @@ export function contextMenu(event, items) {
   menu.style.top = `${Math.max(4, y)}px`;
 
   activeMenu = menu;
+
+  // Fecha ao clicar FORA do menu — mas só fora. Antes, qualquer mousedown
+  // (mesmo dentro do menu) já removia o menu da árvore, e num clique de
+  // mouse de verdade o mouseup chega bem depois: o navegador faz hit-test de
+  // novo nesse momento e, com o menu já removido, o clique caía em cima de
+  // outra coisa (o que estava por baixo) em vez do item. Cada opção do menu
+  // parecia simplesmente não fazer nada. `.click()` sintético num teste não
+  // pega isso, porque dispara direto na referência do nó, sem re-testar o
+  // ponto — só apareceu testando com `elementFromPoint` a cada etapa.
+  const onOutsideMouseDown = (e) => {
+    if (menu.contains(e.target)) return;
+    closeContextMenu();
+  };
   setTimeout(() => {
-    document.addEventListener('mousedown', closeContextMenu, { once: true });
-    document.addEventListener('keydown', escClose, { once: true });
+    document.addEventListener('mousedown', onOutsideMouseDown);
+    document.addEventListener('keydown', escClose);
   }, 0);
+  menu._cleanup = () => {
+    document.removeEventListener('mousedown', onOutsideMouseDown);
+    document.removeEventListener('keydown', escClose);
+  };
 }
 
 function escClose(e) {
@@ -204,6 +221,7 @@ function escClose(e) {
 
 export function closeContextMenu() {
   if (activeMenu) {
+    if (activeMenu._cleanup) activeMenu._cleanup();
     activeMenu.remove();
     activeMenu = null;
   }
