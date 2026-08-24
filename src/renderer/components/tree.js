@@ -57,7 +57,10 @@ function renderNode(container, node, depth, filtering) {
 
   const isFolder = node.kind === 'folder';
   const data = node.data;
-  const expanded = filtering || state.expanded.has(data.id) || (isFolder && data.expanded && !state.expanded.size);
+  // `state.expanded` é a fonte da verdade para TODAS as pastas (semeado a
+  // partir do banco em reloadTree) — sem cair para o campo `data.expanded`
+  // aqui, que era o que fazia uma pasta clicada derrubar as outras.
+  const expanded = filtering || state.expanded.has(data.id);
   const selected = state.selectedNode
     && state.selectedNode.kind === node.kind
     && state.selectedNode.id === data.id;
@@ -255,7 +258,10 @@ async function applyDrop(src, target) {
     if (src.kind === 'folder') await window.tsm.folders.reorder(payload);
     else await window.tsm.sessions.reorder(payload);
 
-    if (target.parentId) state.expanded.add(target.parentId);
+    // `reloadTree` agora reconstrói `expanded` a partir do banco (ver
+    // state.js), então abrir a pasta de destino precisa ser persistido, não
+    // só marcado no Set local — senão o reload some com essa marcação.
+    if (target.parentId) await window.tsm.folders.update(target.parentId, { expanded: true }).catch(() => {});
     await reloadTree();
     render();
   });
@@ -327,8 +333,10 @@ export async function newFolder(parentId) {
   if (!name) return;
   await guard(async () => {
     const f = await window.tsm.folders.create({ name, parentId });
-    if (parentId) state.expanded.add(parentId);
-    state.expanded.add(f.id);
+    // A pasta nova já nasce com expanded=1 no banco; a pasta MÃE que precisa
+    // ser forçada a abrir (para a nova pasta aparecer) precisa de persistir,
+    // já que reloadTree reconstrói `expanded` a partir do banco.
+    if (parentId) await window.tsm.folders.update(parentId, { expanded: true }).catch(() => {});
     await reloadTree();
     render();
   });

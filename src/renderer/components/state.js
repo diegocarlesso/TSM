@@ -43,6 +43,15 @@ export async function reloadTree() {
   ]);
   state.folders = folders;
   state.sessions = sessions;
+  // `expanded` reflete o campo persistido de TODAS as pastas, não só as que já
+  // foram clicadas nesta sessão — sem isso, a árvore só sabia mostrar pastas
+  // "abertas por padrão" enquanto ninguém tivesse clicado em nenhuma pasta
+  // ainda; a primeira pasta clicada por qualquer motivo derrubava esse padrão
+  // para todas as outras de uma vez (ver tree.js).
+  state.expanded.clear();
+  for (const f of folders) {
+    if (f.expanded) state.expanded.add(f.id);
+  }
   emit('tree');
 }
 
