@@ -43,10 +43,10 @@ win:
     # dos alertas do SmartScreen/Defender num binário sem assinatura).
     - target: zip
       arch: [x64, arm64]
-  artifactName: TSM-${version}-${arch}-win.${ext}
+  artifactName: TSM-${version}-win-${arch}.${ext}
 
 portable:
-  artifactName: TSM-${version}-portable-${arch}.exe
+  artifactName: TSM-${version}-win-portable-${arch}.exe
   unpackDirName: TSM
   # Sem atalhos, sem escrever em Program Files.
   requestExecutionLevel: user
@@ -63,7 +63,7 @@ linux:
   category: Network
   maintainer: Diego Carlesso
   synopsis: Gerenciador de sessões SSH/Telnet/Shell/SFTP
-  artifactName: TSM-${version}-${arch}.${ext}
+  artifactName: TSM-${version}-linux-${arch}.${ext}
 
 mac:
   icon: assets/icon-512.png
@@ -78,10 +78,10 @@ mac:
   hardenedRuntime: true
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
-  artifactName: TSM-${version}-${arch}.${ext}
+  artifactName: TSM-${version}-mac-${arch}.${ext}
 
 dmg:
   # O .dmg aqui e só um envelope para arrastar o .app para onde quiser —
   # o app roda de qualquer pasta, inclusive de um pendrive.
-  artifactName: TSM-${version}-${arch}.dmg
+  artifactName: TSM-${version}-mac-${arch}.dmg
   writeUpdateInfo: false
