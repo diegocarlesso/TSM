@@ -37,7 +37,13 @@ win:
       arch: [x64, arm64]
     - target: portable
       arch: [x64]
-  artifactName: TSM-${version}-${arch}.${ext}
+    # `zip` empacota a mesma pasta do `dir`, mas pronta para baixar: abre na hora,
+    # sem a autoextração do `portable` (que descompacta ~86 MB num diretório
+    # temporário a cada execução — é a causa da demora para abrir e de parte
+    # dos alertas do SmartScreen/Defender num binário sem assinatura).
+    - target: zip
+      arch: [x64, arm64]
+  artifactName: TSM-${version}-${arch}-win.${ext}
 
 portable:
   artifactName: TSM-${version}-portable-${arch}.exe

@@ -74,8 +74,8 @@ export async function sessionDialog(session, { folderId = null } = {}) {
   };
 
   // Senhas nunca voltam do main; só sabemos se existem.
-  const hasPassword = session ? await window.tsm.secrets.has('session', session.id, 'password') : false;
-  const hasPassphrase = session ? await window.tsm.secrets.has('session', session.id, 'passphrase') : false;
+  const hasPassword = session ? await window.tsm.secrets.has('session', session.id, 'password').catch(() => false) : false;
+  const hasPassphrase = session ? await window.tsm.secrets.has('session', session.id, 'passphrase').catch(() => false) : false;
   const pending = { password: undefined, passphrase: undefined, jumpPassword: undefined };
 
   let activeTab = 'geral';

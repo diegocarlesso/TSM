@@ -91,7 +91,7 @@ async function openSessionForFiles(session) {
 }
 
 async function newSession(folderId) {
-  const created = await sessionDialog(null, { folderId: folderId ?? currentFolderId() });
+  const created = await guard(() => sessionDialog(null, { folderId: folderId ?? currentFolderId() }));
   if (created) {
     renderTree();
     const ok = await confirmDialog({
@@ -104,7 +104,7 @@ async function newSession(folderId) {
 }
 
 async function editSession(session) {
-  const saved = await sessionDialog(session);
+  const saved = await guard(() => sessionDialog(session));
   if (saved) renderTree();
 }
 
