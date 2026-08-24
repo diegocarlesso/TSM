@@ -15,6 +15,10 @@ src/renderer/app.bundle.js
 src/renderer/app.bundle.js.map
 src/renderer/vendor/
 
+# bundle do processo principal (gerado por npm run build:main)
+src/main/main.bundle.js
+src/main/main.bundle.js.map
+
 # --- DADOS DO USUARIO: nunca versionar --------------------------------------
 # O banco carrega sessoes e o cofre de credenciais cifrado.
 *.db

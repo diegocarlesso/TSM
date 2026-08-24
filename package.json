@@ -5,15 +5,16 @@
   "description": "Gerenciador de sessoes remotas (SSH, Telnet, Shell local, SFTP/SCP) multiplataforma, sem limite de sessoes salvas.",
   "author": "Diego Carlesso",
   "license": "MIT",
-  "main": "src/main/index.js",
+  "main": "src/main/main.bundle.js",
   "scripts": {
-    "start": "npm run build:renderer && electron .",
+    "start": "npm run build:renderer && npm run build:main && electron .",
     "dev": "node scripts/build-renderer.mjs --watch",
     "build:renderer": "node scripts/build-renderer.mjs",
-    "dist": "npm run build:renderer && electron-builder",
-    "dist:win": "npm run build:renderer && electron-builder --win",
-    "dist:linux": "npm run build:renderer && electron-builder --linux",
-    "dist:mac": "npm run build:renderer && electron-builder --mac",
+    "build:main": "node scripts/build-main.mjs",
+    "dist": "npm run build:renderer && npm run build:main && electron-builder",
+    "dist:win": "npm run build:renderer && npm run build:main && electron-builder --win",
+    "dist:linux": "npm run build:renderer && npm run build:main && electron-builder --linux",
+    "dist:mac": "npm run build:renderer && npm run build:main && electron-builder --mac",
     "sqlite:native": "npm install better-sqlite3"
   },
   "dependencies": {

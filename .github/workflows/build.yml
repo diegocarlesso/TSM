@@ -50,6 +50,9 @@ jobs:
       - name: Compilar a interface
         run: npm run build:renderer
 
+      - name: Compilar o processo principal
+        run: npm run build:main
+
       - name: Testes do processo principal
         run: node scripts/smoke.js
 

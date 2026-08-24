@@ -9,6 +9,7 @@ directories:
 files:
   - src/**/*
   - "!src/renderer/app.bundle.js.map"
+  - "!src/main/main.bundle.js.map"
   - assets/**/*
   - package.json
 
