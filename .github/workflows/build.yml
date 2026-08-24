@@ -28,7 +28,7 @@ jobs:
         include:
           - os: windows-latest
             nome: Windows
-            comando: npx electron-builder --win portable dir --x64 --publish never
+            comando: npx electron-builder --win portable dir zip --x64 --publish never
           - os: ubuntu-latest
             nome: Linux
             comando: npx electron-builder --linux AppImage tar.gz dir --x64 --publish never
