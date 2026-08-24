@@ -16,7 +16,8 @@ reutiliza, modifica nem contorna nada do produto da Mobatek.
 
 | Sistema | Arquivo | Como usar |
 |---|---|---|
-| Windows | [TSM-1.2.1-win-portable-x64.exe](https://github.com/diegocarlesso/TSM/releases/download/v1.2.1/TSM-1.2.1-win-portable-x64.exe) | Executável único. Baixe e rode. |
+| Windows | [TSM-1.2.1-win-x64.zip](https://github.com/diegocarlesso/TSM/releases/download/v1.2.1/TSM-1.2.1-win-x64.zip) | **Recomendado.** Extraia uma vez, abre na hora dali em diante. |
+| Windows | [TSM-1.2.1-win-portable-x64.exe](https://github.com/diegocarlesso/TSM/releases/download/v1.2.1/TSM-1.2.1-win-portable-x64.exe) | Executável único, mais lento para abrir (autoextrai a cada execução). |
 | Linux | [TSM-1.2.1-linux-x86_64.AppImage](https://github.com/diegocarlesso/TSM/releases/download/v1.2.1/TSM-1.2.1-linux-x86_64.AppImage) | `chmod +x` e execute. |
 | Linux | [TSM-1.2.1-linux-x64.tar.gz](https://github.com/diegocarlesso/TSM/releases/download/v1.2.1/TSM-1.2.1-linux-x64.tar.gz) | Pasta com o binário, se preferir extrair. |
 | macOS (Apple Silicon) | [TSM-1.2.1-mac-arm64.dmg](https://github.com/diegocarlesso/TSM/releases/download/v1.2.1/TSM-1.2.1-mac-arm64.dmg) | M1/M2/M3/M4. |
