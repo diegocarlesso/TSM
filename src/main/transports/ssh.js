@@ -354,7 +354,8 @@ class SshConnection extends EventEmitter {
         `\r\n\x1b[36m[TSM] túnel local ${localHost}:${localPort} -> ${remoteHost}:${remotePort}\x1b[0m\r\n`);
     });
     server.on('error', (err) => {
-      entry.status = `erro: ${err.message}`;
+      const idx = this.forwards.indexOf(entry);
+      if (idx !== -1) this.forwards.splice(idx, 1);
       this.emit('forwards', this.listForwards());
       this.emit('data', `\r\n\x1b[31m[TSM] túnel local ${localPort}: ${err.message}\x1b[0m\r\n`);
     });
@@ -367,26 +368,32 @@ class SshConnection extends EventEmitter {
 
     this.client.forwardIn(remoteHost, remotePort, (err) => {
       if (err) {
-        entry.status = `erro: ${err.message}`;
+        const idx = this.forwards.indexOf(entry);
+        if (idx !== -1) this.forwards.splice(idx, 1);
         this.emit('forwards', this.listForwards());
         this.emit('data', `\r\n\x1b[31m[TSM] túnel remoto ${remotePort}: ${err.message}\x1b[0m\r\n`);
         return;
       }
       entry.status = 'ativo';
+
+      // Cada túnel remoto só atende o próprio destino. Guardamos o handler para
+      // poder remove-lo depois sem derrubar os outros túneis da mesma conexão.
+      // Só passa a escutar depois que o forwardIn confirma sucesso — registrar
+      // antes faria o listener sobreviver a um túnel que nunca existiu no
+      // lado do servidor.
+      entry.onTcp = (info, accept) => {
+        if (info.destPort !== remotePort) return;
+        const stream = accept();
+        const socket = net.connect(localPort, localHost, () => stream.pipe(socket).pipe(stream));
+        socket.on('error', () => stream.end());
+      };
+      this.client.on('tcp connection', entry.onTcp);
+
       this.emit('forwards', this.listForwards());
       this.emit('data',
         `\r\n\x1b[36m[TSM] túnel remoto ${remoteHost}:${remotePort} -> ${localHost}:${localPort}\x1b[0m\r\n`);
     });
 
-    // Cada túnel remoto só atende o próprio destino. Guardamos o handler para
-    // poder remove-lo depois sem derrubar os outros túneis da mesma conexão.
-    entry.onTcp = (info, accept) => {
-      if (info.destPort !== remotePort) return;
-      const stream = accept();
-      const socket = net.connect(localPort, localHost, () => stream.pipe(socket).pipe(stream));
-      socket.on('error', () => stream.end());
-    };
-    this.client.on('tcp connection', entry.onTcp);
     return entry;
   }
 

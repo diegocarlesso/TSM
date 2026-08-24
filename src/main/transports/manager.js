@@ -4,10 +4,6 @@
  * ele fala por id de conexão e recebe eventos `tsm:conn:*`.
  */
 const crypto = require('node:crypto');
-const { SshConnection } = require('./ssh');
-const { TelnetConnection } = require('./telnet');
-const { ShellConnection } = require('./shell');
-const { SerialConnection } = require('./serial');
 const repo = require('../store/repo');
 const vault = require('../security/vault');
 const logger = require('../logger');
@@ -43,17 +39,21 @@ function resolveSecrets(session, overrides = {}) {
   return { ...out, ...overrides };
 }
 
+// Cada require aqui só roda quando aquele tipo de sessão é de fato criado —
+// ssh2 e os bindings nativos de serialport/node-pty não precisam entrar em
+// memória só porque o app abriu. require() cacheia depois da primeira vez,
+// então isso não repete custo, só adia pro primeiro uso.
 function build(type, config, secrets) {
   switch (type) {
     case 'ssh':
     case 'sftp':
-      return new SshConnection(config, secrets);
+      return new (require('./ssh').SshConnection)(config, secrets);
     case 'telnet':
-      return new TelnetConnection(config, secrets);
+      return new (require('./telnet').TelnetConnection)(config, secrets);
     case 'shell':
-      return new ShellConnection(config, secrets);
+      return new (require('./shell').ShellConnection)(config, secrets);
     case 'serial':
-      return new SerialConnection(config);
+      return new (require('./serial').SerialConnection)(config);
     default:
       throw new Error(`Tipo de sessão não suportado: ${type}`);
   }

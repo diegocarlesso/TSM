@@ -20,6 +20,15 @@ const repo = require('../store/repo');
 const SCRYPT = { N: 2 ** 15, r: 8, p: 1, keylen: 32 };
 const MAGIC = 'TSMv1';
 
+// safeStorage.isEncryptionAvailable() consulta o keyring do SO (DBus no Linux)
+// e não muda durante a vida do processo — cachear evita repetir essa consulta
+// a cada segredo gravado.
+let _safeStorageAvailable = null;
+function safeStorageAvailable() {
+  if (_safeStorageAvailable === null) _safeStorageAvailable = safeStorage.isEncryptionAvailable();
+  return _safeStorageAvailable;
+}
+
 let masterKey = null;      // Buffer, apenas em memória
 let unlocked = false;
 
@@ -62,7 +71,7 @@ function isUnlocked() {
 
 function scheme() {
   if (isMasterEnabled()) return 'aes-256-gcm';
-  return safeStorage.isEncryptionAvailable() ? 'safeStorage' : 'plain-blocked';
+  return safeStorageAvailable() ? 'safeStorage' : 'plain-blocked';
 }
 
 /**
@@ -87,7 +96,7 @@ function setMasterPassword(newPassphrase, currentPassphrase = null) {
     repo.settings.set('vault.master.verifier',
       sealWithKey(masterKey, 'tsm-vault-ok', salt).toString('base64'));
   } else {
-    if (!safeStorage.isEncryptionAvailable()) {
+    if (!safeStorageAvailable()) {
       throw new Error('O sistema não oferece armazenamento seguro; mantenha a senha mestra ativa.');
     }
     masterKey = null;
