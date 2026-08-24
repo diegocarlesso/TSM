@@ -19,7 +19,7 @@ import {
   lockVault, unlockVaultDialog
 } from './components/settings-dialog.js';
 import {
-  snippetsDialog, tunnelsDialog, sessionLogDialog, keysDialog
+  snippetsDialog, tunnelsDialog, sessionLogDialog, keysDialog, automationsDialog
 } from './components/tools-dialog.js';
 
 // ------------------------------------------------------------ bootstrap ---
@@ -30,10 +30,11 @@ async function boot() {
   await reloadTree();
 
   applyUiTheme(setting('ui.theme', 'dark'));
-  document.documentElement.style.setProperty('--accent', setting('ui.accent', '#0090f0'));
+  document.documentElement.style.setProperty('--accent', setting('ui.accent', '#2daaf4'));
   document.documentElement.style.setProperty('--sidebar-w', `${setting('ui.sidebarWidth', 280)}px`);
 
   bindConnectionEvents();
+  bindAutomationEvents();
   bindUi();
   bindShortcuts();
   bindMenu();
@@ -343,6 +344,11 @@ function tabMenu(e, tab, pane) {
         toast('Break enviado', 'ok', 1500);
       })
     },
+    {
+      label: 'Rodar automação…',
+      hidden: !pane.connectionId,
+      onClick: () => runAutomationOnPane(pane)
+    },
     { label: 'Gravar sessão em arquivo…', onClick: () => sessionLogDialog(pane) },
     { label: 'Biblioteca de comandos…', key: 'Ctrl+Shift+S', onClick: () => openSnippets() },
     { separator: true },
@@ -423,6 +429,128 @@ function toggleMultiExec() {
   $('#workspace').before(bar);
   state.multiExec = true;
   input.focus();
+}
+
+// ---------------------------------------------------------- automações ---
+/**
+ * Uma automação por vez, com barra própria para interromper.
+ *
+ * A barra não é enfeite: um roteiro que espera um prompt que nunca vem fica
+ * parado até o timeout do passo, e sem isso a única saída seria fechar a aba.
+ */
+const automationRun = { runId: null, name: '', total: 0, bar: null, label: null };
+
+function showAutomationBar(runId, name, total) {
+  hideAutomationBar();
+  automationRun.runId = runId;
+  automationRun.name = name;
+  automationRun.total = total;
+  automationRun.label = el('span', { text: `⚙ ${name} — aguardando passo 1/${total}` });
+  automationRun.bar = el('div', { class: 'multiexec-bar', id: 'automation-bar' }, [
+    automationRun.label,
+    el('span', { style: 'flex:1' }),
+    el('button', { text: 'Parar', onClick: () => stopAutomationRun() })
+  ]);
+  $('#workspace').before(automationRun.bar);
+}
+
+function hideAutomationBar() {
+  if (automationRun.bar) automationRun.bar.remove();
+  automationRun.runId = null;
+  automationRun.bar = null;
+  automationRun.label = null;
+}
+
+async function stopAutomationRun() {
+  const runId = automationRun.runId;
+  hideAutomationBar();
+  if (!runId) return;
+  await guard(() => window.tsm.automation.stop(runId));
+  toast('Automação interrompida', 'warn', 2500);
+}
+
+/** Só fecha a barra se o evento for da execução que ela representa. */
+function endAutomation(runId) {
+  if (automationRun.runId === runId) hideAutomationBar();
+}
+
+function bindAutomationEvents() {
+  window.tsm.automation.onStep(({ runId, index, step, total }) => {
+    if (automationRun.runId === runId && automationRun.label) {
+      const proximo = Math.min(index + 2, total);
+      automationRun.label.textContent = index + 1 >= total
+        ? `⚙ ${automationRun.name} — passo ${total}/${total}`
+        : `⚙ ${automationRun.name} — aguardando passo ${proximo}/${total}`;
+    }
+    toast(`Passo ${index + 1}: "${step.expect}" casou`, 'ok', 2200);
+  });
+
+  window.tsm.automation.onTimeout(({ runId, index, step, name }) => {
+    endAutomation(runId);
+    toast(`"${name}" parou no passo ${index + 1}: nada casou com "${step.expect}"`, 'err', 7000);
+  });
+
+  window.tsm.automation.onDone(({ runId, name }) => {
+    endAutomation(runId);
+    toast(`Automação "${name}" concluída`, 'ok', 4000);
+  });
+
+  window.tsm.automation.onError(({ runId, name, message }) => {
+    endAutomation(runId);
+    toast(`Automação "${name}": ${message}`, 'err', 7000);
+  });
+}
+
+/** Escolhe um roteiro salvo e dispara na conexão do painel. */
+async function runAutomationOnPane(pane) {
+  const target = pane || activePane();
+  if (!target || !target.connectionId) return toast('Abra uma sessão conectada primeiro', 'warn');
+
+  const all = await guard(() => window.tsm.automations.list());
+  if (!all) return;
+  if (!all.length) {
+    toast('Nenhuma automação cadastrada ainda — crie a primeira.', 'warn', 5000);
+    return automationsDialog();
+  }
+
+  const chosen = await modal({
+    title: `Rodar automação em "${target.name}"`,
+    width: 520,
+    render: (api) => {
+      const list = el('div', { style: 'max-height:50vh;overflow:auto' });
+      for (const a of all) {
+        list.append(el('div', { class: 'node', onClick: () => api.close(a) }, [
+          el('span', { class: 'glyph', text: '⚙' }),
+          el('span', { class: 'label', text: a.name }),
+          el('span', {
+            class: 'meta',
+            text: `${a.steps.length} passo(s)${a.category ? ` · ${a.category}` : ''}`
+          })
+        ]));
+      }
+      return list;
+    },
+    footer: (api) => [
+      el('button', { text: 'Gerenciar automações…', onClick: () => { api.close(undefined); automationsDialog(); } }),
+      el('button', { text: 'Cancelar', onClick: () => api.close(undefined) })
+    ]
+  });
+  if (!chosen) return;
+
+  if (automationRun.runId) {
+    const trocar = await confirmDialog({
+      title: 'Já existe uma automação rodando',
+      message: `Parar "${automationRun.name}" e rodar "${chosen.name}"?`,
+      confirmLabel: 'Parar e rodar'
+    });
+    if (!trocar) return;
+    await stopAutomationRun();
+  }
+
+  const res = await guard(() => window.tsm.automation.run(target.connectionId, chosen.id));
+  if (!res) return;
+  showAutomationBar(res.runId, res.name, res.steps);
+  toast(`Automação "${res.name}" iniciada`, 'ok', 2500);
 }
 
 /** Abre a biblioteca de comandos já ligada a aba ativa (ou a todas). */
@@ -601,6 +729,8 @@ function bindMenu() {
         if (!res.canceled) toast(`Backup salvo em ${res.filePath}`, 'ok');
       });
       case 'snippets': return openSnippets();
+      case 'automations': return automationsDialog();
+      case 'automation:run': return runAutomationOnPane(pane);
       case 'multiexec': return toggleMultiExec();
       case 'opendata': return window.tsm.app.showItemInFolder(state.info.dbPath);
       case 'tunnels': return tunnelsDialog(pane);

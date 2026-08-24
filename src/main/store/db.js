@@ -172,6 +172,22 @@ const MIGRATIONS = [
       );
       CREATE INDEX idx_snippets_cat ON snippets(category, sort_order);
     `);
+  },
+
+  // ---- v3: roteiros de automação (expect/send) --------------------------
+  (d) => {
+    d.exec(`
+      CREATE TABLE automations (
+        id         TEXT PRIMARY KEY,
+        name       TEXT NOT NULL,
+        category   TEXT NOT NULL DEFAULT '',
+        steps      TEXT NOT NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE INDEX idx_automations_cat ON automations(category, sort_order);
+    `);
   }
 ];
 

@@ -9,6 +9,7 @@ const vault = require('../security/vault');
 const logger = require('../logger');
 
 const live = new Map();   // id -> { conn, meta, logId }
+const runs = new Map();   // runId -> { run, connectionId, automationId }
 
 function emit(sender, channel, payload) {
   if (sender && !sender.isDestroyed()) sender.send(channel, payload);
@@ -218,8 +219,64 @@ function removeForward(id, forwardId) {
 /** Acesso genérico a conexão viva, para recursos específicos de um transporte. */
 const connectionFor = (id) => at(id);
 
+// ------------------------------------------------------ automações --------
+/**
+ * Dispara um roteiro expect/send contra uma conexão viva. Cada execução ganha
+ * um `runId` próprio, para dar conta de mais de uma automação rodando em abas
+ * diferentes ao mesmo tempo — e para o renderer poder cancelar a certa.
+ */
+function runAutomation(sender, connectionId, automationId) {
+  const conn = connectionFor(connectionId);
+  if (!conn) throw new Error('Conexão não está ativa');
+
+  const automation = repo.automations.find(automationId);
+  if (!automation) throw new Error('Automação não encontrada');
+  if (!automation.steps.length) throw new Error(`"${automation.name}" não tem nenhum passo`);
+
+  const { AutomationRun } = require('./automator');
+  const runId = crypto.randomUUID();
+  const run = new AutomationRun(conn, automation.steps);
+  runs.set(runId, { run, connectionId, automationId });
+
+  const base = { runId, connectionId, automationId, name: automation.name };
+  const finish = (canal, payload) => {
+    runs.delete(runId);
+    emit(sender, canal, { ...base, ...payload });
+  };
+
+  run.on('step', (p) => emit(sender, 'tsm:automation:step', { ...base, ...p, total: automation.steps.length }));
+  run.on('timeout', (p) => finish('tsm:automation:timeout', p));
+  run.on('done', () => finish('tsm:automation:done', {}));
+  run.on('error', (err) => finish('tsm:automation:error', { message: err.message }));
+
+  // Se a conexão cair no meio do roteiro, não adianta continuar esperando.
+  const onClose = () => stopAutomation(runId);
+  conn.once('close', onClose);
+  for (const ev of ['timeout', 'done', 'error']) {
+    run.once(ev, () => conn.removeListener('close', onClose));
+  }
+
+  // O primeiro passo pode casar de imediato (ver `start()` do automator), e aí
+  // 'step'/'done' sairiam antes de a resposta do IPC entregar o runId ao
+  // renderer — que perderia o fim da execução. `setImmediate` roda depois.
+  setImmediate(() => {
+    if (runs.get(runId)) run.start();
+  });
+
+  return { runId, name: automation.name, steps: automation.steps.length };
+}
+
+function stopAutomation(runId) {
+  const entry = runs.get(runId);
+  if (!entry) return false;
+  runs.delete(runId);
+  entry.run.stop();
+  return true;
+}
+
 module.exports = {
   create, write, resize, close, answerPrompt, answerHostKey, list, closeAll, connectionFor,
   sshConnectionFor, resolveConfig, resolveSecrets,
-  startLog, stopLog, logStatus, forwardsOf, addForward, removeForward
+  startLog, stopLog, logStatus, forwardsOf, addForward, removeForward,
+  runAutomation, stopAutomation
 };

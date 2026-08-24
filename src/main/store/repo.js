@@ -418,6 +418,75 @@ const snippets = {
   }
 };
 
+// ------------------------------------------------------------ automações ---
+/**
+ * Roteiros expect/send. `steps` fica como JSON no banco (mesma ideia do
+ * `config` de sessão) e volta sempre como array para quem chama.
+ */
+function parseAutomation(row) {
+  if (!row) return null;
+  let steps;
+  try { steps = JSON.parse(row.steps || '[]'); } catch { steps = []; }
+  return { ...row, steps: Array.isArray(steps) ? steps : [] };
+}
+
+/** Normaliza um passo vindo da UI: só os campos previstos, com os padrões. */
+function normalizeStep(step) {
+  const s = step || {};
+  return {
+    expect: String(s.expect ?? ''),
+    send: String(s.send ?? ''),
+    sendEnter: s.sendEnter === false ? false : true,
+    timeoutMs: Number(s.timeoutMs) > 0 ? Number(s.timeoutMs) : 8000
+  };
+}
+
+const normalizeSteps = (steps) => (Array.isArray(steps) ? steps : []).map(normalizeStep);
+
+const automations = {
+  list() {
+    return db.get()
+      .prepare('SELECT * FROM automations ORDER BY category COLLATE NOCASE, sort_order, name COLLATE NOCASE')
+      .all()
+      .map(parseAutomation);
+  },
+  find(id) {
+    return parseAutomation(db.get().prepare('SELECT * FROM automations WHERE id = ?').get(id));
+  },
+  create(input) {
+    const t = now();
+    const id = input.id || uid();
+    db.get().prepare(
+      `INSERT INTO automations (id, name, category, steps, sort_order, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      id, input.name, input.category || '',
+      JSON.stringify(normalizeSteps(input.steps)),
+      input.sortOrder ?? nextOrder('automations', 'category', input.category || ''),
+      t, t
+    );
+    return automations.find(id);
+  },
+  update(id, patch) {
+    const cur = automations.find(id);
+    if (!cur) throw new Error(`Automação ${id} não encontrada`);
+    db.get().prepare(
+      `UPDATE automations SET name = ?, category = ?, steps = ?, sort_order = ?, updated_at = ?
+       WHERE id = ?`
+    ).run(
+      patch.name ?? cur.name,
+      patch.category !== undefined ? patch.category : cur.category,
+      JSON.stringify(normalizeSteps(patch.steps !== undefined ? patch.steps : cur.steps)),
+      patch.sortOrder ?? cur.sort_order,
+      now(), id
+    );
+    return automations.find(id);
+  },
+  remove(id) {
+    db.get().prepare('DELETE FROM automations WHERE id = ?').run(id);
+  }
+};
+
 // ------------------------------------------------------------------- log ---
 const log = {
   open(entry) {
@@ -441,6 +510,6 @@ const log = {
 };
 
 module.exports = {
-  folders, sessions, identities, settings, themes, knownHosts, snippets, log,
+  folders, sessions, identities, settings, themes, knownHosts, snippets, automations, log,
   tx, uid, descendants
 };

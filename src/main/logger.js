@@ -131,4 +131,7 @@ function stopAll() {
   return Promise.all([...streams.keys()].map((id) => stop(id)));
 }
 
-module.exports = { start, write, stop, status, stopAll, resolvePath, defaultDir };
+/** Texto sem as sequências de escape — reaproveitado pelo motor de automação. */
+const stripAnsi = (text) => String(text).replace(ANSI_RE, '');
+
+module.exports = { start, write, stop, status, stopAll, resolvePath, defaultDir, stripAnsi };

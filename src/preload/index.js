@@ -121,6 +121,23 @@ contextBridge.exposeInMainWorld('tsm', {
     remove: (id) => call('tsm:snippets:remove', id)
   },
 
+  automations: {
+    list: () => call('tsm:automations:list'),
+    create: (input) => call('tsm:automations:create', input),
+    update: (id, patch) => call('tsm:automations:update', id, patch),
+    remove: (id) => call('tsm:automations:remove', id)
+  },
+
+  automation: {
+    run: (connectionId, automationId) => call('tsm:automation:run', connectionId, automationId),
+    stop: (runId) => call('tsm:automation:stop', runId),
+
+    onStep: (h) => on('tsm:automation:step', h),
+    onTimeout: (h) => on('tsm:automation:timeout', h),
+    onDone: (h) => on('tsm:automation:done', h),
+    onError: (h) => on('tsm:automation:error', h)
+  },
+
   keys: {
     list: () => call('tsm:keys:list'),
     generate: (options) => call('tsm:keys:generate', options),

@@ -73,7 +73,7 @@
 
     const css = getComputedStyle(document.documentElement);
     const accent = css.getPropertyValue('--accent').trim().toLowerCase();
-    record(accent === '#0090f0', 'a cor de destaque vem da paleta do icone', `--accent = ${accent}`);
+    record(accent === '#2daaf4', 'a cor de destaque vem da paleta configurada', `--accent = ${accent}`);
     record(
       css.getPropertyValue('--brand-grad').includes('168, 240, 24')
         || css.getPropertyValue('--brand-grad').includes('a8f018'),

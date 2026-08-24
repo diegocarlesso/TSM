@@ -111,10 +111,10 @@ console.log('[banco]');
 check('abre e aplica todas as migrações', () => {
   db.open();
   const v = db.get().pragma('user_version', { simple: true });
-  assert(v >= 2, `user_version = ${v}`);
+  assert(v >= 3, `user_version = ${v}`);
   // As tabelas de todas as migrações precisam existir.
   for (const t of ['folders', 'sessions', 'identities', 'secrets', 'settings',
-                   'themes', 'known_hosts', 'connection_log', 'snippets']) {
+                   'themes', 'known_hosts', 'connection_log', 'snippets', 'automations']) {
     const row = db.get()
       .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
       .get(t);
@@ -257,6 +257,202 @@ check('cria, lista, edita e remove snippet', () => {
   assert(repo.snippets.find(snip.id).run === false);
   repo.snippets.remove(snip.id);
   assert(repo.snippets.list().length === 0);
+});
+
+console.log('\n[automações — repositório]');
+check('cria, lista, edita e remove automação com passos JSON', () => {
+  const auto = repo.automations.create({
+    name: 'Login no switch',
+    category: 'Switches',
+    steps: [
+      { expect: '[Ll]ogin:\\s*$', send: 'admin' },
+      { expect: '[Pp]assword:\\s*$', send: 'senha', sendEnter: false, timeoutMs: 3000 }
+    ]
+  });
+  assert(repo.automations.list().length === 1);
+  const lido = repo.automations.find(auto.id);
+  assert(Array.isArray(lido.steps) && lido.steps.length === 2, JSON.stringify(lido.steps));
+  // Padrões aplicados na gravação: sendEnter true e timeout de 8s.
+  assert(lido.steps[0].sendEnter === true && lido.steps[0].timeoutMs === 8000, JSON.stringify(lido.steps[0]));
+  assert(lido.steps[1].sendEnter === false && lido.steps[1].timeoutMs === 3000, JSON.stringify(lido.steps[1]));
+
+  repo.automations.update(auto.id, {
+    name: 'Login e versão',
+    steps: [...lido.steps, { expect: '#\\s*$', send: 'show version' }]
+  });
+  const dep = repo.automations.find(auto.id);
+  assert(dep.name === 'Login e versão' && dep.steps.length === 3, JSON.stringify(dep));
+
+  repo.automations.remove(auto.id);
+  assert(repo.automations.list().length === 0);
+});
+
+console.log('\n[automações — motor expect/send]');
+const { AutomationRun } = require('../src/main/transports/automator');
+const { EventEmitter } = require('node:events');
+
+/** Conexão falsa: registra o que foi escrito e deixa o teste injetar dados. */
+function fakeConn() {
+  const conn = new EventEmitter();
+  conn.escritos = [];
+  conn.write = (s) => { conn.escritos.push(s); };
+  return conn;
+}
+
+checkAsync('automações — motor expect/send', 'roda dois passos na ordem e emite done', async () => {
+  const conn = fakeConn();
+  const run = new AutomationRun(conn, [
+    { expect: 'login:\\s*$', send: 'admin', sendEnter: true, timeoutMs: 2000 },
+    { expect: 'password:\\s*$', send: 'segredo', sendEnter: true, timeoutMs: 2000 }
+  ]);
+
+  const passos = [];
+  run.on('step', (p) => passos.push(p.index));
+  const done = new Promise((resolve, reject) => {
+    run.on('done', resolve);
+    run.on('timeout', (p) => reject(new Error(`timeout inesperado no passo ${p.index + 1}`)));
+    run.on('error', reject);
+  });
+
+  run.start();
+  // Ruído antes do prompt não pode disparar nada.
+  conn.emit('data', 'Bem-vindo ao switch\r\n');
+  assert(conn.escritos.length === 0, `escreveu cedo demais: ${JSON.stringify(conn.escritos)}`);
+
+  conn.emit('data', 'login: ');
+  await new Promise((r) => setTimeout(r, 20));
+  assert(conn.escritos.length === 1, `escreveu ${conn.escritos.length} vez(es)`);
+
+  conn.emit('data', 'password: ');
+  await done;
+
+  assert(conn.escritos.join('|') === 'admin\n|segredo\n', JSON.stringify(conn.escritos));
+  assert(passos.join(',') === '0,1', passos.join(','));
+  assert(conn.listenerCount('data') === 0, 'não soltou o listener de data ao terminar');
+});
+
+checkAsync('automações — motor expect/send', 'sendEnter:false digita sem Enter', async () => {
+  const conn = fakeConn();
+  const run = new AutomationRun(conn, [{ expect: '\\$\\s*$', send: 'top', sendEnter: false, timeoutMs: 1000 }]);
+  const done = new Promise((resolve, reject) => {
+    run.on('done', resolve);
+    run.on('timeout', () => reject(new Error('estourou o prazo')));
+  });
+  run.start();
+  conn.emit('data', 'user@host:~$ ');
+  await done;
+  assert(conn.escritos[0] === 'top', JSON.stringify(conn.escritos));
+});
+
+checkAsync('automações — motor expect/send', 'passo que nunca casa estoura o prazo e para a run', async () => {
+  const conn = fakeConn();
+  const run = new AutomationRun(conn, [
+    { expect: 'nunca-vai-aparecer', send: 'x', timeoutMs: 50 }
+  ]);
+  const evento = await new Promise((resolve, reject) => {
+    run.on('timeout', resolve);
+    run.on('done', () => reject(new Error('emitiu done em vez de timeout')));
+    run.start();
+    conn.emit('data', 'outra coisa qualquer\r\n');
+  });
+  assert(evento.index === 0, `timeout no passo ${evento.index}`);
+  assert(run.stopped === true, 'a run continuou viva depois do timeout');
+  assert(conn.escritos.length === 0, JSON.stringify(conn.escritos));
+  assert(conn.listenerCount('data') === 0, 'não soltou o listener de data no timeout');
+  // Depois de parada, dado novo não pode mais disparar escrita.
+  conn.emit('data', 'nunca-vai-aparecer');
+  assert(conn.escritos.length === 0, 'escreveu depois de parada');
+});
+
+checkAsync('automações — motor expect/send', 'regex inválida emite error em vez de travar', async () => {
+  const conn = fakeConn();
+  const run = new AutomationRun(conn, [{ expect: '[', send: 'x', timeoutMs: 3000 }]);
+  const err = await new Promise((resolve, reject) => {
+    run.on('error', resolve);
+    run.on('done', () => reject(new Error('emitiu done')));
+    run.on('timeout', () => reject(new Error('emitiu timeout')));
+    run.start();
+    conn.emit('data', 'qualquer coisa');
+  });
+  assert(/regex inválida/.test(err.message), err.message);
+  assert(run.stopped === true, 'a run não parou depois do erro');
+  assert(conn.escritos.length === 0, JSON.stringify(conn.escritos));
+});
+
+checkAsync('automações — motor expect/send', 'primeiro passo que casa com vazio dá o empurrão inicial', async () => {
+  // O prompt já passou antes de o roteiro começar; um passo com `.*` manda um
+  // Enter na hora para o equipamento reimprimir o prompt.
+  const conn = fakeConn();
+  const run = new AutomationRun(conn, [
+    { expect: '.*', send: '', sendEnter: true, timeoutMs: 1000 },
+    { expect: '#\\s*$', send: 'show version', sendEnter: true, timeoutMs: 1000 }
+  ]);
+  const done = new Promise((resolve, reject) => {
+    run.on('done', resolve);
+    run.on('timeout', (p) => reject(new Error(`timeout no passo ${p.index + 1}`)));
+    run.on('error', reject);
+  });
+  run.start();
+  assert(conn.escritos.join('') === '\n', `não mandou o Enter inicial: ${JSON.stringify(conn.escritos)}`);
+  conn.emit('data', '\r\nswitch# ');
+  await done;
+  assert(conn.escritos.join('|') === '\n|show version\n', JSON.stringify(conn.escritos));
+});
+
+checkAsync('automações — motor expect/send', 'padrão ancorado casa mesmo com escapes ANSI no prompt', async () => {
+  const ESC = String.fromCharCode(27);
+  const conn = fakeConn();
+  const run = new AutomationRun(conn, [
+    { expect: '[Pp]assword:\\s*$', send: 'segredo', timeoutMs: 1000 }
+  ]);
+  const done = new Promise((resolve, reject) => {
+    run.on('done', resolve);
+    run.on('timeout', () => reject(new Error('o escape depois do prompt quebrou o padrão ancorado')));
+  });
+  run.start();
+  // Prompt colorido e com "mostrar cursor" logo depois — o caso real.
+  conn.emit('data', `${ESC}[1;32mPassword:${ESC}[0m `);
+  conn.emit('data', `${ESC}[?25h`);
+  await done;
+  assert(conn.escritos[0] === 'segredo\n', JSON.stringify(conn.escritos));
+});
+
+checkAsync('automações — motor expect/send', 'escape partido entre dois chunks não polui o buffer', async () => {
+  const ESC = String.fromCharCode(27);
+  const conn = fakeConn();
+  const run = new AutomationRun(conn, [{ expect: '#\\s*$', send: 'show run', timeoutMs: 1000 }]);
+  const done = new Promise((resolve, reject) => {
+    run.on('done', resolve);
+    run.on('timeout', () => reject(new Error('estourou o prazo')));
+  });
+  run.start();
+  conn.emit('data', `switch#${ESC}[`);
+  conn.emit('data', '0m');
+  await done;
+  assert(conn.escritos[0] === 'show run\n', JSON.stringify(conn.escritos));
+});
+
+checkAsync('automações — motor expect/send', 'roteiro vazio termina de imediato', async () => {
+  const conn = fakeConn();
+  const run = new AutomationRun(conn, []);
+  await new Promise((resolve, reject) => {
+    run.on('done', resolve);
+    setTimeout(() => reject(new Error('não emitiu done')), 300);
+    run.start();
+  });
+  assert(conn.listenerCount('data') === 0, 'assinou data com roteiro vazio');
+});
+
+checkAsync('automações — motor expect/send', 'buffer não cresce sem limite em sessão barulhenta', async () => {
+  const conn = fakeConn();
+  const run = new AutomationRun(conn, [{ expect: 'FIM', send: 'ok', timeoutMs: 2000 }]);
+  run.start();
+  for (let i = 0; i < 40; i++) conn.emit('data', 'x'.repeat(1000));
+  assert(run.buffer.length <= 8192, `buffer com ${run.buffer.length} bytes`);
+  const done = new Promise((resolve) => run.on('done', resolve));
+  conn.emit('data', 'FIM');
+  await done;
+  assert(conn.escritos[0] === 'ok\n', JSON.stringify(conn.escritos));
 });
 
 console.log('\n[gravação de sessão]');

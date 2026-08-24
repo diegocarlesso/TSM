@@ -150,6 +150,16 @@ function register() {
   handle('tsm:snippets:update', (_e, id, patch) => repo.snippets.update(id, patch));
   handle('tsm:snippets:remove', (_e, id) => { repo.snippets.remove(id); return true; });
 
+  // ---------------------------------------------------------- automações --
+  handle('tsm:automations:list', () => repo.automations.list());
+  handle('tsm:automations:create', (_e, input) => repo.automations.create(input));
+  handle('tsm:automations:update', (_e, id, patch) => repo.automations.update(id, patch));
+  handle('tsm:automations:remove', (_e, id) => { repo.automations.remove(id); return true; });
+
+  handle('tsm:automation:run', (event, connectionId, automationId) =>
+    manager.runAutomation(event.sender, connectionId, automationId));
+  handle('tsm:automation:stop', (_e, runId) => manager.stopAutomation(runId));
+
   // -------------------------------------------------------- chaves SSH ---
   handle('tsm:keys:list', () => keygen.list());
   handle('tsm:keys:generate', (_e, options) => {

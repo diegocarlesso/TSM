@@ -88,6 +88,8 @@ function build(win) {
       label: 'Fe&rramentas',
       submenu: [
         { label: 'Biblioteca de comandos...', accelerator: 'CmdOrCtrl+Shift+S', click: () => send(win, 'snippets') },
+        { label: 'Automações...', click: () => send(win, 'automations') },
+        { label: 'Rodar automação na aba ativa...', accelerator: 'CmdOrCtrl+Shift+R', click: () => send(win, 'automation:run') },
         { label: 'Túneis da sessão...', click: () => send(win, 'tunnels') },
         { label: 'Gravar sessão em arquivo...', click: () => send(win, 'sessionlog') },
         { label: 'MultiExec', accelerator: 'CmdOrCtrl+Shift+M', click: () => send(win, 'multiexec') },

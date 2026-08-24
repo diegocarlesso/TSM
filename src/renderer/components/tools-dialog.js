@@ -151,6 +151,185 @@ async function editSnippet(snippet) {
   });
 }
 
+// -------------------------------------------------------- automações -----
+/**
+ * Roteiros expect/send: uma lista de passos "espere este padrão -> mande este
+ * comando". Guardados por nome, rodam depois contra qualquer aba conectada.
+ */
+export async function automationsDialog() {
+  const body = el('div');
+
+  async function rerender() {
+    const all = await window.tsm.automations.list().catch(() => []);
+
+    const table = el('table', { class: 'grid' });
+    table.append(el('thead', {}, el('tr', {}, [
+      el('th', { text: 'Nome' }), el('th', { text: 'Categoria' }),
+      el('th', { text: 'Passos' }), el('th', { text: '' })
+    ])));
+    const tbody = el('tbody');
+    for (const a of all) {
+      tbody.append(el('tr', {}, [
+        el('td', { text: a.name }),
+        el('td', { text: a.category || '—' }),
+        el('td', { text: String(a.steps.length) }),
+        el('td', {}, el('div', { class: 'inline' }, [
+          el('button', {
+            class: 'icon-btn', text: '✎', title: 'Editar',
+            onClick: () => editAutomation(a).then(rerender)
+          }),
+          el('button', {
+            class: 'icon-btn', text: '✕', title: 'Excluir',
+            onClick: async () => {
+              const ok = await confirmDialog({
+                title: 'Excluir automação', message: `Excluir "${a.name}"?`, danger: true
+              });
+              if (ok) {
+                await window.tsm.automations.remove(a.id);
+                await rerender();
+              }
+            }
+          })
+        ]))
+      ]));
+    }
+    table.append(tbody);
+
+    body.replaceChildren(
+      all.length
+        ? table
+        : el('p', {
+            class: 'muted',
+            text: 'Nenhuma automação guardada. Crie um roteiro de "esperar padrão → enviar comando" ' +
+                  'e rode em qualquer aba conectada.'
+          }),
+      el('div', { style: 'margin-top:12px' }, [
+        el('button', { text: '+ Nova automação', onClick: () => editAutomation(null).then(rerender) })
+      ])
+    );
+  }
+
+  await rerender();
+  await modal({
+    title: 'Automações (expect / send)',
+    width: 760,
+    render: () => body,
+    footer: (api) => [el('button', { class: 'primary', text: 'Fechar', onClick: () => api.close(true) })]
+  });
+}
+
+async function editAutomation(automation) {
+  const model = {
+    name: automation ? automation.name : '',
+    category: automation ? automation.category : '',
+    steps: automation ? automation.steps.map((s) => ({ ...s })) : []
+  };
+
+  const body = el('div');
+
+  function rerender() {
+    const table = el('table', { class: 'grid' });
+    table.append(el('thead', {}, el('tr', {}, [
+      el('th', { text: 'Esperar (regex)' }), el('th', { text: 'Enviar' }),
+      el('th', { text: 'Enter?' }), el('th', { text: 'Timeout (ms)' }), el('th', { text: '' })
+    ])));
+    const tbody = el('tbody');
+    model.steps.forEach((step, i) => {
+      tbody.append(el('tr', {}, [
+        el('td', {}, el('input', {
+          type: 'text', value: step.expect, placeholder: '[Pp]assword:\\s*$',
+          style: 'width:100%;font-family:var(--font-mono);font-size:11px',
+          onInput: (e) => { step.expect = e.target.value; }
+        })),
+        el('td', {}, el('input', {
+          type: 'text', value: step.send, placeholder: 'show version',
+          style: 'width:100%;font-family:var(--font-mono);font-size:11px',
+          onInput: (e) => { step.send = e.target.value; }
+        })),
+        el('td', { style: 'text-align:center' }, el('input', {
+          type: 'checkbox', checked: step.sendEnter !== false,
+          onChange: (e) => { step.sendEnter = e.target.checked; }
+        })),
+        el('td', {}, el('input', {
+          type: 'number', value: step.timeoutMs, min: '100', style: 'width:90px',
+          onInput: (e) => { step.timeoutMs = Number(e.target.value) || 8000; }
+        })),
+        el('td', {}, el('button', {
+          class: 'icon-btn', text: '✕', title: 'Remover passo',
+          onClick: () => { model.steps.splice(i, 1); rerender(); }
+        }))
+      ]));
+    });
+    table.append(tbody);
+
+    body.replaceChildren(
+      el('div', { class: 'form-grid' }, [
+        el('label', { text: 'Nome' }),
+        el('input', {
+          type: 'text', value: model.name, placeholder: 'Login e coleta de versão',
+          onInput: (e) => { model.name = e.target.value; }
+        }),
+        el('label', { text: 'Categoria' }),
+        el('input', {
+          type: 'text', value: model.category, placeholder: 'Switches, Roteadores, OLT…',
+          onInput: (e) => { model.category = e.target.value; }
+        })
+      ]),
+      el('div', { style: 'margin-top:12px' }, [
+        model.steps.length
+          ? table
+          : el('p', { class: 'muted', text: 'Nenhum passo ainda. Cada passo espera um padrão e responde com um comando.' })
+      ]),
+      el('div', { style: 'margin-top:10px' }, [
+        el('button', {
+          text: '+ Adicionar passo',
+          onClick: () => {
+            model.steps.push({ expect: '', send: '', sendEnter: true, timeoutMs: 8000 });
+            rerender();
+          }
+        })
+      ]),
+      el('div', {
+        class: 'hint',
+        text: 'O padrão é uma expressão regular sem as barras: "[Pp]assword:\\s*$", "#\\s*$". ' +
+              'O timeout é quanto esperar aquele padrão antes de desistir do roteiro.'
+      })
+    );
+  }
+
+  rerender();
+
+  const ok = await modal({
+    title: automation ? `Editar — ${automation.name}` : 'Nova automação',
+    width: 760,
+    render: () => body,
+    footer: (api) => [
+      el('button', { text: 'Cancelar', onClick: () => api.close(false) }),
+      el('button', { class: 'primary', text: 'Salvar', onClick: () => api.close(true) })
+    ]
+  });
+
+  if (!ok) return;
+  if (!model.name.trim()) return toast('Dê um nome à automação', 'err');
+  if (!model.steps.length) return toast('Adicione pelo menos um passo', 'err');
+  if (model.steps.some((s) => !s.expect.trim())) return toast('Todo passo precisa de um padrão a esperar', 'err');
+
+  // Regex inválida só apareceria no meio da execução; barra aqui.
+  for (let i = 0; i < model.steps.length; i++) {
+    try {
+      new RegExp(model.steps[i].expect);
+    } catch (err) {
+      return toast(`Passo ${i + 1}: regex inválida — ${err.message}`, 'err', 6000);
+    }
+  }
+
+  await guard(async () => {
+    if (automation) await window.tsm.automations.update(automation.id, model);
+    else await window.tsm.automations.create(model);
+    toast('Automação salva', 'ok');
+  });
+}
+
 // ------------------------------------------------------------- túneis ----
 export async function tunnelsDialog(pane) {
   const target = pane || activePane();
