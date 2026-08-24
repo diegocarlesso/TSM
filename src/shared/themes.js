@@ -122,7 +122,7 @@ const UI_THEMES = [
 
 const DEFAULT_SETTINGS = {
   'ui.theme': 'dark',
-  'ui.accent': '#0090f0',
+  'ui.accent': '#2daaf4',
   'ui.sidebarWidth': 280,
   'ui.language': 'pt-BR',
   'terminal.theme': 'tsm-dark',

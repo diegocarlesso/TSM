@@ -86,7 +86,7 @@ export async function settingsDialog(initialTab = 'aparência') {
         (v) => commit('ui.theme', v)
       ));
       add('Cor de destaque', el('input', {
-        type: 'color', value: draft['ui.accent'] || '#0090f0',
+        type: 'color', value: draft['ui.accent'] || '#2daaf4',
         onInput: (e) => commit('ui.accent', e.target.value)
       }));
       add('Tema do terminal', el('div', { class: 'inline' }, [

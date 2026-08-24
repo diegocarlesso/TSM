@@ -3,9 +3,12 @@
  * Paleta derivada de assets/icon.png: azul #0090f0 -> lima #a8f018, com o
  * navy #003060 do lado escuro do simbolo. Os fundos são esse navy dessaturado,
  * para a interface parecer o icone sem virar um borrao azul.
+ *
+ * --accent trocado para o azul de assets/colors.png (#2daaf4) — o resto da
+ * paleta (gradiente da marca, fundos) continua vindo do ícone.
  */
 :root {
-  --accent: #0090f0;
+  --accent: #2daaf4;
   --accent-2: #9ee62c;
   --brand-grad: linear-gradient(120deg, #0090f0 0%, #29c48c 55%, #a8f018 100%);
   --bg-0: #080e17;
