@@ -12,16 +12,16 @@ reutiliza, modifica nem contorna nada do produto da Mobatek.
 
 ## Download
 
-Última versão: [**v1.3.2**](https://github.com/diegocarlesso/TSM/releases/tag/v1.3.2) — nenhum instalador, é só baixar e rodar.
+Última versão: [**v1.4.0**](https://github.com/diegocarlesso/TSM/releases/tag/v1.4.0) — nenhum instalador, é só baixar e rodar.
 
 | Sistema | Arquivo | Como usar |
 |---|---|---|
-| Windows | [TSM-1.3.2-win-x64.zip](https://github.com/diegocarlesso/TSM/releases/download/v1.3.2/TSM-1.3.2-win-x64.zip) | **Recomendado.** Extraia uma vez, abre na hora dali em diante. |
-| Windows | [TSM-1.3.2-win-portable-x64.exe](https://github.com/diegocarlesso/TSM/releases/download/v1.3.2/TSM-1.3.2-win-portable-x64.exe) | Executável único, mais lento para abrir (autoextrai a cada execução). |
-| Linux | [TSM-1.3.2-linux-x86_64.AppImage](https://github.com/diegocarlesso/TSM/releases/download/v1.3.2/TSM-1.3.2-linux-x86_64.AppImage) | `chmod +x` e execute. |
-| Linux | [TSM-1.3.2-linux-x64.tar.gz](https://github.com/diegocarlesso/TSM/releases/download/v1.3.2/TSM-1.3.2-linux-x64.tar.gz) | Pasta com o binário, se preferir extrair. |
-| macOS (Apple Silicon) | [TSM-1.3.2-mac-arm64.dmg](https://github.com/diegocarlesso/TSM/releases/download/v1.3.2/TSM-1.3.2-mac-arm64.dmg) | M1/M2/M3/M4. |
-| macOS (Intel) | [TSM-1.3.2-mac-x64.dmg](https://github.com/diegocarlesso/TSM/releases/download/v1.3.2/TSM-1.3.2-mac-x64.dmg) | Macs Intel. |
+| Windows | [TSM-1.4.0-win-x64.zip](https://github.com/diegocarlesso/TSM/releases/download/v1.4.0/TSM-1.4.0-win-x64.zip) | **Recomendado.** Extraia uma vez, abre na hora dali em diante. |
+| Windows | [TSM-1.4.0-win-portable-x64.exe](https://github.com/diegocarlesso/TSM/releases/download/v1.4.0/TSM-1.4.0-win-portable-x64.exe) | Executável único, mais lento para abrir (autoextrai a cada execução). |
+| Linux | [TSM-1.4.0-linux-x86_64.AppImage](https://github.com/diegocarlesso/TSM/releases/download/v1.4.0/TSM-1.4.0-linux-x86_64.AppImage) | `chmod +x` e execute. |
+| Linux | [TSM-1.4.0-linux-x64.tar.gz](https://github.com/diegocarlesso/TSM/releases/download/v1.4.0/TSM-1.4.0-linux-x64.tar.gz) | Pasta com o binário, se preferir extrair. |
+| macOS (Apple Silicon) | [TSM-1.4.0-mac-arm64.dmg](https://github.com/diegocarlesso/TSM/releases/download/v1.4.0/TSM-1.4.0-mac-arm64.dmg) | M1/M2/M3/M4. |
+| macOS (Intel) | [TSM-1.4.0-mac-x64.dmg](https://github.com/diegocarlesso/TSM/releases/download/v1.4.0/TSM-1.4.0-mac-x64.dmg) | Macs Intel. |
 
 > **macOS:** binários sem assinatura (o projeto não tem certificado Apple). Na primeira abertura: botão direito no app → **Abrir** → **Abrir**.
 > **Windows:** o `.exe` portátil é um autoextraível — ele descompacta para uma pasta temporária a cada execução, o que o torna mais lento para abrir e mais sujeito a alertas do SmartScreen/Defender do que um binário assinado. Veja [Empacotamento (portátil)](#empacotamento-portátil) para a alternativa em pasta, mais rápida.
@@ -93,6 +93,9 @@ reutiliza, modifica nem contorna nada do produto da Mobatek.
   confirmação ao colar múltiplas linhas.
 - Reconexão automática opcional quando a conexão cai.
 - Histórico de conexões e gerenciamento de chaves de host conhecidas.
+- **Aviso de nova versão** disponível no GitHub Releases — checagem roda inteiramente no
+  processo principal (a interface continua sem fazer nenhuma chamada de rede própria),
+  uma vez por dia, com opção de desligar em Configurações.
 
 ### Segurança
 - Credenciais cifradas pelo **cofre do sistema** (DPAPI no Windows, Keychain no macOS,
@@ -178,9 +181,9 @@ O que sai em `dist/`:
 | Plataforma | Artefato | Como usar |
 |---|---|---|
 | Windows | `win-unpacked/` | Pasta pronta com `Total Session Manager.exe` e os arquivos de apoio. Copie a pasta inteira e execute. |
-| Windows | `TSM-1.3.2-win-x64.zip` | **Recomendado.** Mesma pasta do `win-unpacked`, zipada. Extraia uma vez e o app abre na hora dali em diante. |
-| Windows | `TSM-1.3.2-win-portable-x64.exe` | Executável único (~86 MB), no estilo do MobaXterm Portable. Mais conveniente para levar num pendrive, mas mais lento: é um autoextraível NSIS que descompacta tudo para uma pasta temporária **toda vez que abre** — isso soma alguns segundos de espera e é parte do motivo dele chamar mais atenção do SmartScreen/Defender. |
-| Linux | `TSM-1.3.2-linux-x86_64.AppImage` | Um arquivo só: `chmod +x` e execute. |
+| Windows | `TSM-1.4.0-win-x64.zip` | **Recomendado.** Mesma pasta do `win-unpacked`, zipada. Extraia uma vez e o app abre na hora dali em diante. |
+| Windows | `TSM-1.4.0-win-portable-x64.exe` | Executável único (~86 MB), no estilo do MobaXterm Portable. Mais conveniente para levar num pendrive, mas mais lento: é um autoextraível NSIS que descompacta tudo para uma pasta temporária **toda vez que abre** — isso soma alguns segundos de espera e é parte do motivo dele chamar mais atenção do SmartScreen/Defender. |
+| Linux | `TSM-1.4.0-linux-x86_64.AppImage` | Um arquivo só: `chmod +x` e execute. |
 | Linux | `linux-unpacked/`, `.tar.gz` | Pasta com o binário e as bibliotecas. |
 | macOS | `mac/Total Session Manager.app` | Arraste para onde quiser e abra. |
 | macOS | `.dmg` / `.zip` | Envelope para distribuir o `.app`. |
@@ -315,10 +318,11 @@ em *Configurações → Aparência*, e essas escolhas nunca são sobrescritas.
 node scripts/smoke.js
 ```
 
-53 verificações do processo principal em ~7 s, sem abrir a interface: banco, migrações,
+64 verificações do processo principal em ~7 s, sem abrir a interface: banco, migrações,
 cofre, importadores, export/import, negociação Telnet, gravação de sessão, geração de
-chaves e o motor de automação (expect/send, contra uma conexão simulada). Inclui um teto de
-tempo na inserção em lote, que já pegou uma regressão real de desempenho.
+chaves, o motor de automação (expect/send, contra uma conexão simulada) e o aviso de nova
+versão (com rede simulada — sucesso, cache, falha, rate-limit). Inclui um teto de tempo na
+inserção em lote, que já pegou uma regressão real de desempenho.
 
 ```bash
 TSM_SMOKE=1 TSM_UITEST=scripts/uitest-split.js npx electron .
