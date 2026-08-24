@@ -514,6 +514,19 @@ check('chave com senha não abre sem a senha', () => {
   assert(comSenha.type === 'ssh-rsa', comSenha.type);
 });
 
+console.log('\n[recuperação de trava órfã]');
+check('db.open() remove sozinho um tsm.db.lock órfão e volta a escrever', () => {
+  // Precisa rodar num processo à parte: db.js é singleton (db.open() já foi
+  // chamado acima, nesta mesma instância) e o cenário exige simular o
+  // diretório de trava ANTES da primeira abertura do banco naquela pasta.
+  const { execFileSync } = require('node:child_process');
+  const saida = execFileSync(
+    process.execPath, [path.join(__dirname, 'check-stale-lock.js')],
+    { encoding: 'utf8' }
+  ).trim();
+  assert(saida === 'ok', saida);
+});
+
 console.log('\n[modo portátil]');
 check('os dados ficam na pasta apontada, não no perfil do usuário', () => {
   const paths = require('../src/main/paths');

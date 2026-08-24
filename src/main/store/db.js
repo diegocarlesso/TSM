@@ -20,6 +20,20 @@ function open() {
   fs.mkdirSync(dir, { recursive: true });
   dbPath = path.join(dir, 'tsm.db');
 
+  // O motor WASM usa um DIRETÓRIO `<arquivo>.lock` como trava de escrita
+  // (mkdir/rmdir) — se o processo anterior morrer no meio de uma transação
+  // (crash, encerrado pelo Gerenciador de Tarefas, queda de energia), esse
+  // diretório fica órfão para sempre, e toda escrita futura falha com
+  // SQLITE_BUSY silenciosamente (nada na interface reage a clique nenhum).
+  // Como só chegamos aqui depois de `app.requestSingleInstanceLock()` ter
+  // sido concedido lá em index.js, temos garantia de sermos o único processo
+  // do TSM rodando — então qualquer `.lock` encontrado aqui é órfão, nunca de
+  // outro processo legítimo, e é seguro remover antes de abrir o banco.
+  const staleLock = `${dbPath}.lock`;
+  if (fs.existsSync(staleLock)) {
+    fs.rmSync(staleLock, { recursive: true, force: true });
+  }
+
   db = sqlite.open(dbPath);
   // WAL só existe no motor nativo; o VFS do WASM ignora e segue em `delete`.
   db.pragma('journal_mode = WAL');
