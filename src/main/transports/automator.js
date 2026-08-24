@@ -88,7 +88,10 @@ class AutomationRun extends EventEmitter {
     this.buffer = '';
     const index = this.index;
     try {
-      this.conn.write(String(step.send ?? '') + (step.sendEnter === false ? '' : '\n'));
+      // '\r', não '\n': é o que uma tecla Enter de verdade manda para um pty.
+      // O PSReadLine do PowerShell (o shell padrão no Windows) não confirma
+      // comando com '\n' sozinho — fica preso no prompt de continuação '>>'.
+      this.conn.write(String(step.send ?? '') + (step.sendEnter === false ? '' : '\r'));
     } catch (err) {
       this.stop();
       this.emit('error', new Error(`Passo ${index + 1}: falha ao enviar — ${err.message}`));

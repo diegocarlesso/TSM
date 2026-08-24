@@ -93,7 +93,9 @@ export async function snippetsDialog({ onSend } = {}) {
   }
 
   function send(snippet, broadcastAll) {
-    const text = snippet.content + (snippet.run ? '\n' : '');
+    // \r, não \n: é o que a tecla Enter de verdade manda pro pty. \n sozinho
+    // não confirma comando no PowerShell (o PSReadLine só reage a \r).
+    const text = snippet.content + (snippet.run ? '\r' : '');
     if (onSend) onSend(text, broadcastAll);
   }
 

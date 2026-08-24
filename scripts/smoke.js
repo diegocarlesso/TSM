@@ -326,7 +326,7 @@ checkAsync('automações — motor expect/send', 'roda dois passos na ordem e em
   conn.emit('data', 'password: ');
   await done;
 
-  assert(conn.escritos.join('|') === 'admin\n|segredo\n', JSON.stringify(conn.escritos));
+  assert(conn.escritos.join('|') === 'admin\r|segredo\r', JSON.stringify(conn.escritos));
   assert(passos.join(',') === '0,1', passos.join(','));
   assert(conn.listenerCount('data') === 0, 'não soltou o listener de data ao terminar');
 });
@@ -393,10 +393,10 @@ checkAsync('automações — motor expect/send', 'primeiro passo que casa com va
     run.on('error', reject);
   });
   run.start();
-  assert(conn.escritos.join('') === '\n', `não mandou o Enter inicial: ${JSON.stringify(conn.escritos)}`);
+  assert(conn.escritos.join('') === '\r', `não mandou o Enter inicial: ${JSON.stringify(conn.escritos)}`);
   conn.emit('data', '\r\nswitch# ');
   await done;
-  assert(conn.escritos.join('|') === '\n|show version\n', JSON.stringify(conn.escritos));
+  assert(conn.escritos.join('|') === '\r|show version\r', JSON.stringify(conn.escritos));
 });
 
 checkAsync('automações — motor expect/send', 'padrão ancorado casa mesmo com escapes ANSI no prompt', async () => {
@@ -414,7 +414,7 @@ checkAsync('automações — motor expect/send', 'padrão ancorado casa mesmo co
   conn.emit('data', `${ESC}[1;32mPassword:${ESC}[0m `);
   conn.emit('data', `${ESC}[?25h`);
   await done;
-  assert(conn.escritos[0] === 'segredo\n', JSON.stringify(conn.escritos));
+  assert(conn.escritos[0] === 'segredo\r', JSON.stringify(conn.escritos));
 });
 
 checkAsync('automações — motor expect/send', 'escape partido entre dois chunks não polui o buffer', async () => {
@@ -429,7 +429,7 @@ checkAsync('automações — motor expect/send', 'escape partido entre dois chun
   conn.emit('data', `switch#${ESC}[`);
   conn.emit('data', '0m');
   await done;
-  assert(conn.escritos[0] === 'show run\n', JSON.stringify(conn.escritos));
+  assert(conn.escritos[0] === 'show run\r', JSON.stringify(conn.escritos));
 });
 
 checkAsync('automações — motor expect/send', 'roteiro vazio termina de imediato', async () => {
@@ -452,7 +452,7 @@ checkAsync('automações — motor expect/send', 'buffer não cresce sem limite 
   const done = new Promise((resolve) => run.on('done', resolve));
   conn.emit('data', 'FIM');
   await done;
-  assert(conn.escritos[0] === 'ok\n', JSON.stringify(conn.escritos));
+  assert(conn.escritos[0] === 'ok\r', JSON.stringify(conn.escritos));
 });
 
 console.log('\n[gravação de sessão]');
