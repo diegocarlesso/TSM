@@ -94,6 +94,6 @@ jobs:
           # ordem, e o `|| true` cobre a corrida entre dois jobs simultaneos.
           if ! gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
             gh release create "${GITHUB_REF_NAME}" \
-              --title "TSM ${GITHUB_REF_NAME}" --generate-notes || true
+              --title "TSM ${GITHUB_REF_NAME#v}" --generate-notes || true
           fi
           gh release upload "${GITHUB_REF_NAME}" "${arquivos[@]}" --clobber

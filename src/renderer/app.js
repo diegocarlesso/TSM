@@ -150,6 +150,8 @@ function bindUi() {
   $('#btn-import').addEventListener('click', importDialog);
   $('#btn-export').addEventListener('click', exportDialog);
   $('#btn-quick').addEventListener('click', quickConnect);
+  $('#btn-tab-new-session').addEventListener('click', () => newSession(null));
+  $('#btn-tab-shell').addEventListener('click', shellMenuOrDefault);
   $('#btn-settings').addEventListener('click', () => settingsDialog('aparência'));
 
   $('#search').addEventListener('input', (e) => {

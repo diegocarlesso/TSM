@@ -409,6 +409,15 @@ TSM_DATA_DIR=./demo node scripts/seed-demo.js
 TSM_SMOKE=1 TSM_UITEST=scripts/uitest-shot.js TSM_SHOT=tela.png TSM_DATA_DIR=./demo npx electron .
 ```
 
+```bash
+TSM_SMOKE=1 TSM_UITEST=scripts/uitest-tabbar-buttons.js npx electron .
+```
+
+Confere os botões "Sessão" e "Shell" na barra de abas (ao lado do "+" de conexão
+rápida): que existem, que "Sessão" abre o diálogo de nova sessão e que "Shell" abre
+uma aba de shell local — inclusive quando há mais de um shell instalado e aparece o
+menu de escolha antes.
+
 ## Licença
 
 MIT.
