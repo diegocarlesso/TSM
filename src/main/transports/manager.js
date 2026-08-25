@@ -15,9 +15,20 @@ function emit(sender, channel, payload) {
   if (sender && !sender.isDestroyed()) sender.send(channel, payload);
 }
 
-/** Junta config da sessão + overrides do "conectar como" da UI. */
+/**
+ * Junta config da sessão + overrides do "conectar como" da UI. O usuário da
+ * credencial vinculada é fallback aqui pelo mesmo motivo que senha/frase-secreta
+ * são fallback em `resolveSecrets`: a UI já copia esse usuário para o campo da
+ * sessão ao escolher a credencial, mas sessões antigas (ou o fluxo de conexão
+ * rápida) podem ter `identity_id` sem o campo preenchido.
+ */
 function resolveConfig(session, overrides = {}) {
-  return { ...(session ? session.config : {}), ...overrides };
+  const merged = { ...(session ? session.config : {}), ...overrides };
+  if (!merged.username && session && session.identity_id) {
+    const identity = repo.identities.find(session.identity_id);
+    if (identity && identity.username) merged.username = identity.username;
+  }
+  return merged;
 }
 
 /** Lê os segredos da sessão e da identidade vinculada (identidade é o fallback). */

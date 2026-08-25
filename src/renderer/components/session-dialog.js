@@ -78,6 +78,16 @@ export async function sessionDialog(session, { folderId = null } = {}) {
   const hasPassphrase = session ? await window.tsm.secrets.has('session', session.id, 'passphrase').catch(() => false) : false;
   const pending = { password: undefined, passphrase: undefined, jumpPassword: undefined };
 
+  // Idem para a senha/frase-secreta da credencial vinculada — só usada como
+  // indicação no placeholder (o fallback de verdade acontece na conexão, em
+  // manager.js). Recalculado sempre que o dropdown de credencial muda.
+  model.identityHasPassword = false;
+  model.identityHasPassphrase = false;
+  if (model.identityId) {
+    model.identityHasPassword = await window.tsm.secrets.has('identity', model.identityId, 'password').catch(() => false);
+    model.identityHasPassphrase = await window.tsm.secrets.has('identity', model.identityId, 'passphrase').catch(() => false);
+  }
+
   let activeTab = 'geral';
   const body = el('div');
 
@@ -213,17 +223,28 @@ export async function sessionDialog(session, { folderId = null } = {}) {
           { value: '', label: '(nenhuma — usar os campos abaixo)' },
           ...state.identities.map((i) => ({ value: i.id, label: `${i.name} (${i.username || 'sem usuário'})` }))
         ];
-        add('Credencial salva', select(identOptions, model.identityId || '', (v) => { model.identityId = v || null; }),
-          'Reaproveita uma senha/chave cadastrada em Ferramentas > Credenciais.');
+        add('Credencial salva', select(identOptions, model.identityId || '', async (v) => {
+          model.identityId = v || null;
+          const ident = state.identities.find((i) => i.id === v);
+          if (ident && ident.username) c.username = ident.username;
+          model.identityHasPassword = false;
+          model.identityHasPassphrase = false;
+          rerender();
+          if (v) {
+            model.identityHasPassword = await window.tsm.secrets.has('identity', v, 'password').catch(() => false);
+            model.identityHasPassphrase = await window.tsm.secrets.has('identity', v, 'passphrase').catch(() => false);
+            rerender();
+          }
+        }), 'Reaproveita uma senha/chave cadastrada em Ferramentas > Credenciais — preenche o usuário na hora.');
 
         if (c.authType === 'key' || c.authType === 'key+password') {
           add('Chave privada', pathPicker(c.privateKeyPath || '', (v) => { c.privateKeyPath = v; }, false,
             [{ name: 'Chaves', extensions: ['pem', 'key', 'rsa', 'ed25519', ''] }]));
-          add('Senha da chave', secretInput('passphrase', hasPassphrase, pending),
+          add('Senha da chave', secretInput('passphrase', hasPassphrase, pending, model.identityHasPassphrase),
             'Guardada cifrada no cofre; nunca sai em claro.');
         }
         if (c.authType !== 'agent') {
-          add('Senha', secretInput('password', hasPassword, pending));
+          add('Senha', secretInput('password', hasPassword, pending, model.identityHasPassword));
         }
       }
 
@@ -462,10 +483,13 @@ async function persist(model, pending, isNew) {
 
 // ------------------------------------------------------------ widgets -----
 /** Campo de senha que distingue "não mexi", "limpar" e "novo valor". */
-function secretInput(field, alreadySet, pending) {
+function secretInput(field, alreadySet, pending, fromIdentity) {
+  const placeholder = alreadySet
+    ? '•••••••• (guardada)'
+    : fromIdentity ? '•••••••• (vem da credencial salva)' : 'não definida';
   const input = el('input', {
     type: 'password',
-    placeholder: alreadySet ? '•••••••• (guardada)' : 'não definida',
+    placeholder,
     autocomplete: 'new-password',
     onInput: (e) => { pending[field] = e.target.value; }
   });

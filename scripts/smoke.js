@@ -103,6 +103,7 @@ const putty = require('../src/main/importers/putty');
 const portability = require('../src/main/portability');
 const { BUILTIN_THEMES, DEFAULT_SETTINGS } = require('../src/shared/themes');
 const telnet = require('../src/main/transports/telnet');
+const manager = require('../src/main/transports/manager');
 const shellTransport = require('../src/main/transports/shell');
 
 console.log(`\nTSM - teste de fumaça (dados em ${tmp})\n`);
@@ -210,6 +211,22 @@ check('reordena e move em lote', () => {
 check('descendentes por CTE recursiva', () => {
   const ids = repo.descendants(f1.id);
   assert(ids.length === 2 && ids.includes(f2.id), JSON.stringify(ids));
+});
+check('credencial salva entra como fallback do usuário na conexão', () => {
+  const ident = repo.identities.create({ name: 'prod-bastion', username: 'deploy' });
+  const semUsuario = repo.sessions.create({
+    name: 'sem-usuario', type: 'ssh', folderId: f2.id,
+    config: { host: '10.0.0.9', port: 22 }, identityId: ident.id
+  });
+  assert(manager.resolveConfig(repo.sessions.find(semUsuario.id)).username === 'deploy',
+    'sessão sem usuário próprio deveria herdar o da credencial');
+
+  const comUsuario = repo.sessions.create({
+    name: 'com-usuario', type: 'ssh', folderId: f2.id,
+    config: { host: '10.0.0.9', port: 22, username: 'admin' }, identityId: ident.id
+  });
+  assert(manager.resolveConfig(repo.sessions.find(comUsuario.id)).username === 'admin',
+    'usuário já preenchido na sessão não pode ser sobrescrito pela credencial');
 });
 
 console.log('\n[cofre de credenciais]');

@@ -101,6 +101,10 @@ reutiliza, modifica nem contorna nada do produto da Mobatek.
 - Credenciais cifradas pelo **cofre do sistema** (DPAPI no Windows, Keychain no macOS,
   libsecret/kwallet no Linux) **ou** por **senha mestra** (AES-256-GCM com chave derivada
   por scrypt), à sua escolha.
+- **Credenciais reutilizáveis** (Ferramentas → Credenciais): escolher uma no editor de
+  sessão preenche o usuário na hora e a senha entra como fallback na conexão — sem
+  precisar cadastrar de novo em cada sessão. A senha nunca aparece em claro na interface,
+  só um aviso de que ela "vem da credencial salva".
 - Verificação de **chave de host** com alerta explícito quando a chave muda.
 - O processo de interface roda com `contextIsolation`, sem Node e sob CSP restritiva.
   Nenhuma senha em claro atravessa a ponte para a interface.
@@ -318,7 +322,7 @@ em *Configurações → Aparência*, e essas escolhas nunca são sobrescritas.
 node scripts/smoke.js
 ```
 
-65 verificações do processo principal em ~7 s, sem abrir a interface: banco, migrações,
+66 verificações do processo principal em ~7 s, sem abrir a interface: banco, migrações,
 cofre, importadores, export/import, negociação Telnet, gravação de sessão, geração de
 chaves, o motor de automação (expect/send, contra uma conexão simulada) e o aviso de nova
 versão (com rede simulada — sucesso, cache, falha, rate-limit). Inclui um teto de tempo na
@@ -393,6 +397,18 @@ TSM_SMOKE=1 TSM_UITEST=scripts/uitest-terminal-shortcuts.js npx electron .
 Confere que Ctrl+Shift+seta, Ctrl+Shift+W e Ctrl+W disparados no MESMO elemento que o
 xterm.js escuta de verdade (não em `window` diretamente, o que não reproduziria o bug)
 chegam até o app em vez de morrer dentro do terminal.
+
+```bash
+TSM_DATA_DIR=./ident node scripts/seed-identity.js
+```
+
+```bash
+TSM_SMOKE=1 TSM_UITEST=scripts/uitest-identity-autofill.js TSM_DATA_DIR=./ident npx electron .
+```
+
+Confere o preenchimento automático ao escolher "Credencial salva" no editor de sessão:
+a credencial aparece no dropdown, escolher preenche o usuário, e o placeholder da senha
+avisa que ela vem da credencial — sem nunca mostrar o valor em claro.
 
 ```bash
 TSM_DATA_DIR=./serial node scripts/seed-serial.js
