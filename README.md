@@ -387,6 +387,14 @@ Biblioteca de comandos quanto por uma automação. `\n` sozinho não submete no 
 o teste que teria pego essa regressão se ela voltasse.
 
 ```bash
+TSM_SMOKE=1 TSM_UITEST=scripts/uitest-terminal-shortcuts.js npx electron .
+```
+
+Confere que Ctrl+Shift+seta, Ctrl+Shift+W e Ctrl+W disparados no MESMO elemento que o
+xterm.js escuta de verdade (não em `window` diretamente, o que não reproduziria o bug)
+chegam até o app em vez de morrer dentro do terminal.
+
+```bash
 TSM_DATA_DIR=./serial node scripts/seed-serial.js
 ```
 

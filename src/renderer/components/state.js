@@ -172,3 +172,38 @@ export function buildTree() {
 
   return walk(null);
 }
+
+// -------------------------------------------------- atalhos reservados -----
+// Ctrl+letra (sem Shift) que o app usa e o xterm.js normalmente mandaria pro
+// shell como sequência de controle (Ctrl+D = EOF, Ctrl+R = busca reversa...).
+// A sobreposição é proposital — mesma escolha do MobaXterm — mas só faz
+// sentido se a tecla realmente chegar no app em vez de morrer no terminal.
+const RESERVED_PLAIN = new Set(['n', 'w', 'd', 'r', 'p', 'b', 'f', 'k', 'l']);
+// Ctrl+Shift+letra: sem equivalente de controle no terminal, sempre do app.
+const RESERVED_SHIFT = new Set(['n', 'f', 't', 'w', 'c', 'v', 'a', 'e', 'm', 's', 'r']);
+
+/**
+ * True quando o evento é um atalho do app (menu ou `bindShortcuts`), não
+ * entrada para o shell. Usado tanto pelo listener global quanto pelo
+ * `attachCustomKeyEventHandler` de cada terminal — uma fonte só de verdade,
+ * para não desalinhar "o que os dois lados acham que é atalho".
+ */
+export function isAppShortcut(e) {
+  if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+    return ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key);
+  }
+
+  const ctrl = e.ctrlKey || e.metaKey;
+  if (!ctrl) return false;
+
+  if (e.key === 'Tab') return true;
+  if (!e.shiftKey && /^[1-9]$/.test(e.key)) return true;
+  if ([',', '=', '-', '0'].includes(e.key)) return true;
+
+  const key = e.key.toLowerCase();
+  if (e.shiftKey) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') return true;
+    return RESERVED_SHIFT.has(key);
+  }
+  return RESERVED_PLAIN.has(key);
+}

@@ -45,7 +45,7 @@
     // com mais de um shell instalado, "Shell" abre um menu de escolha em vez
     // de abrir direto — mesmo comportamento do botão "Shell local" da tela
     // de boas-vindas (shellMenuOrDefault).
-    await sleep(150);
+    await waitFor(() => $('.context-menu') || $$('#tabs .tab').length > abasAntes, 'menu de shells ou aba abrir');
     const menu = $('.context-menu');
     if (menu) menu.querySelector('.item')?.click();
     await waitFor(() => $$('#tabs .tab').length > abasAntes, 'nova aba de shell local abrir');

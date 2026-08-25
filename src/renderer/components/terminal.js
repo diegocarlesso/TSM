@@ -7,7 +7,7 @@ import { Unicode11Addon } from '@xterm/addon-unicode11';
 
 import { el, toast, notifyError, contextMenu, promptDialog, confirmDialog } from './ui.js';
 import {
-  state, setting, emit, paneById, activePane, tabById, activeTab
+  state, setting, emit, paneById, activePane, tabById, activeTab, isAppShortcut
 } from './state.js';
 import * as layout from './layout.js';
 
@@ -213,6 +213,14 @@ function buildFindBar() {
 
 function wireTerminal(pane) {
   const { term } = pane;
+
+  // Sem isto, o xterm processa TODO keydown como entrada de terminal — inclusive
+  // os atalhos do app (Ctrl+D, Ctrl+R, Ctrl+Shift+seta...), que nunca chegavam
+  // no listener global nem no acelerador do menu porque o xterm já tinha dado
+  // preventDefault/stopPropagation antes. Devolver `false` aqui pula o
+  // processamento interno do xterm para esse evento e deixa ele seguir normal
+  // (bolha até o `window`, aciona o acelerador nativo do Electron).
+  term.attachCustomKeyEventHandler((e) => e.type !== 'keydown' || !isAppShortcut(e));
 
   term.onData((data) => {
     if (state.multiExec) return;                 // MultiExec cuida do envio
