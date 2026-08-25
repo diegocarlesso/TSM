@@ -47,21 +47,26 @@
     $('#btn-new-session').click();
     await waitFor(() => $('.modal-backdrop'), 'editor de sessão abrir');
 
-    await irPara('Autenticação');
+    // O dropdown mora na aba Geral (junto de Host/Porta/Usuário) — não na
+    // Autenticação — pra ficar visível na primeira aba, sem precisar saber
+    // que existe uma aba separada só pra isso.
+    record($('.tabs-strip button.active')?.textContent.trim() === 'Geral',
+      'o editor já abre na aba Geral, onde a credencial fica visível');
     const dropdown = campo('Credencial salva'); // select() devolve o <select> direto, sem wrapper
     const opcoes = [...dropdown.querySelectorAll('option')].map((o) => o.textContent);
     record(opcoes.some((t) => t.includes('prod-bastion')), 'a credencial semeada aparece no dropdown', opcoes.join(', '));
 
+    await irPara('Autenticação');
     const senhaAntes = campo('Senha').querySelector('input').placeholder;
     record(senhaAntes === 'não definida', 'antes de escolher, a senha mostra "não definida"', senhaAntes);
+    await irPara('Geral');
 
     dropdown.value = 'ident-teste';
     dropdown.dispatchEvent(new Event('change', { bubbles: true }));
     await sleep(300); // busca async de secrets.has('identity', ...)
 
-    await irPara('Geral');
     const usuario = campo('Usuário'); // input direto, sem wrapper
-    record(usuario.value === 'deploy', 'escolher a credencial preenche o usuário', usuario.value);
+    record(usuario.value === 'deploy', 'escolher a credencial preenche o usuário na mesma aba', usuario.value);
 
     await irPara('Autenticação');
     const senhaDepois = campo('Senha').querySelector('input').placeholder;

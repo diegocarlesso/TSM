@@ -195,6 +195,27 @@ export async function sessionDialog(session, { folderId = null } = {}) {
           type: 'number', value: c.port || (model.type === 'telnet' ? 23 : 22), min: '1', max: '65535',
           onInput: (e) => { c.port = Number(e.target.value); }
         }));
+
+        if (model.type === 'ssh' || model.type === 'sftp') {
+          const identOptions = [
+            { value: '', label: '(nenhuma — usar os campos abaixo)' },
+            ...state.identities.map((i) => ({ value: i.id, label: `${i.name} (${i.username || 'sem usuário'})` }))
+          ];
+          add('Credencial salva', select(identOptions, model.identityId || '', async (v) => {
+            model.identityId = v || null;
+            const ident = state.identities.find((i) => i.id === v);
+            if (ident && ident.username) c.username = ident.username;
+            model.identityHasPassword = false;
+            model.identityHasPassphrase = false;
+            rerender();
+            if (v) {
+              model.identityHasPassword = await window.tsm.secrets.has('identity', v, 'password').catch(() => false);
+              model.identityHasPassphrase = await window.tsm.secrets.has('identity', v, 'passphrase').catch(() => false);
+              rerender();
+            }
+          }), 'Reaproveita uma senha/chave cadastrada em Ferramentas > Credenciais — preenche o usuário abaixo (a senha fica na aba Autenticação).');
+        }
+
         add('Usuário', el('input', {
           type: 'text', value: c.username || '',
           onInput: (e) => { c.username = e.target.value.trim(); }
@@ -218,24 +239,6 @@ export async function sessionDialog(session, { folderId = null } = {}) {
     if (activeTab === 'auth' && model.type !== 'shell') {
       if (model.type === 'ssh' || model.type === 'sftp') {
         add('Método', select(AUTH_TYPES, c.authType || 'password', (v) => { c.authType = v; rerender(); }));
-
-        const identOptions = [
-          { value: '', label: '(nenhuma — usar os campos abaixo)' },
-          ...state.identities.map((i) => ({ value: i.id, label: `${i.name} (${i.username || 'sem usuário'})` }))
-        ];
-        add('Credencial salva', select(identOptions, model.identityId || '', async (v) => {
-          model.identityId = v || null;
-          const ident = state.identities.find((i) => i.id === v);
-          if (ident && ident.username) c.username = ident.username;
-          model.identityHasPassword = false;
-          model.identityHasPassphrase = false;
-          rerender();
-          if (v) {
-            model.identityHasPassword = await window.tsm.secrets.has('identity', v, 'password').catch(() => false);
-            model.identityHasPassphrase = await window.tsm.secrets.has('identity', v, 'passphrase').catch(() => false);
-            rerender();
-          }
-        }), 'Reaproveita uma senha/chave cadastrada em Ferramentas > Credenciais — preenche o usuário na hora.');
 
         if (c.authType === 'key' || c.authType === 'key+password') {
           add('Chave privada', pathPicker(c.privateKeyPath || '', (v) => { c.privateKeyPath = v; }, false,

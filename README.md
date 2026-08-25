@@ -406,9 +406,18 @@ TSM_DATA_DIR=./ident node scripts/seed-identity.js
 TSM_SMOKE=1 TSM_UITEST=scripts/uitest-identity-autofill.js TSM_DATA_DIR=./ident npx electron .
 ```
 
-Confere o preenchimento automático ao escolher "Credencial salva" no editor de sessão:
-a credencial aparece no dropdown, escolher preenche o usuário, e o placeholder da senha
-avisa que ela vem da credencial — sem nunca mostrar o valor em claro.
+Confere o preenchimento automático ao escolher "Credencial salva" na aba Geral do editor
+de sessão (junto de Host/Porta/Usuário, não escondido numa aba separada): a credencial
+aparece no dropdown, escolher preenche o usuário na mesma aba, e o placeholder da senha
+(aba Autenticação) avisa que ela vem da credencial — sem nunca mostrar o valor em claro.
+
+```bash
+TSM_SMOKE=1 TSM_UITEST=scripts/uitest-vault-badge.js npx electron .
+```
+
+Confere que o botão direito no badge do cofre (rodapé da barra lateral) abre
+Configurações > Segurança direto — onde ficam as credenciais salvas, sem depender de
+lembrar que isso existe no menu Ferramentas.
 
 ```bash
 TSM_DATA_DIR=./serial node scripts/seed-serial.js

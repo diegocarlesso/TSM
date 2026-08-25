@@ -171,6 +171,13 @@ function bindUi() {
     else if (state.vault.masterEnabled) await lockVault();
     else await settingsDialog('segurança');
   });
+  // Clique abre/fecha o cofre quando há senha mestra — atalho direto pra
+  // Configurações > Segurança (onde ficam as credenciais salvas) sem depender
+  // de lembrar que isso existe no menu Ferramentas.
+  $('#vault-state').addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    settingsDialog('segurança');
+  });
 
   for (const btn of $$('#welcome [data-action]')) {
     btn.addEventListener('click', () => {
@@ -789,14 +796,15 @@ function renderVaultBadge() {
   if (!v.masterEnabled) {
     badge.textContent = v.scheme === 'safeStorage' ? 'cofre do SO' : 'sem cofre';
     badge.title = v.scheme === 'safeStorage'
-      ? 'Credenciais cifradas pelo sistema operacional. Clique para configurar.'
+      ? 'Credenciais cifradas pelo sistema operacional. Clique para configurar (botão direito também abre).'
       : 'Nenhum mecanismo de cifragem disponível. Clique para definir uma senha mestra.';
     if (v.scheme !== 'safeStorage') badge.classList.add('locked');
     return;
   }
   badge.classList.add(v.unlocked ? 'open' : 'locked');
   badge.textContent = v.unlocked ? 'cofre aberto' : 'cofre bloqueado';
-  badge.title = v.unlocked ? 'Clique para bloquear' : 'Clique para desbloquear';
+  badge.title = (v.unlocked ? 'Clique para bloquear' : 'Clique para desbloquear')
+    + ' — botão direito abre Configurações > Segurança';
 }
 
 // Recalcula os terminais quando a janela muda de tamanho.
