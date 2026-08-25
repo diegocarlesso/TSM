@@ -122,6 +122,27 @@ check('abre e aplica todas as migrações', () => {
   }
 });
 check(`motor ativo: ${db.engine()}`, () => true);
+check('migração v4 fecha pastas que já existiam com expanded=1', () => {
+  // `folders.create()` grava expanded=0 desde a v1.3.1, mas isso só vale para
+  // pastas criadas DEPOIS dessa mudança — quem já tinha pastas (todas com
+  // expanded=1, o default original da coluna) continuava vendo tudo aberto.
+  // Recria esse cenário legado num banco à parte: aplica só a v1 (schema com
+  // o default antigo), semeia uma pasta com expanded=1 "à mão", e confere que
+  // rodar as migrações restantes (que incluem a v4) fecha essa pasta.
+  const sqlite = require('../src/main/store/sqlite');
+  const scratch = sqlite.open(path.join(tmp, 'migration-v4-check.db'));
+  try {
+    db.MIGRATIONS[0](scratch);
+    scratch.pragma('user_version = 1');
+    scratch.exec(`INSERT INTO folders (id, parent_id, name, sort_order, expanded, created_at, updated_at)
+                  VALUES ('legacy', NULL, 'Legado', 0, 1, 0, 0)`);
+    db.migrate(scratch);
+    const row = scratch.prepare('SELECT expanded FROM folders WHERE id = ?').get('legacy');
+    assert(row.expanded === 0, `expanded = ${row.expanded}`);
+  } finally {
+    scratch.close();
+  }
+});
 
 console.log('\n[pastas e sessões]');
 let f1;

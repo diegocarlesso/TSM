@@ -202,6 +202,16 @@ const MIGRATIONS = [
       );
       CREATE INDEX idx_automations_cat ON automations(category, sort_order);
     `);
+  },
+
+  // ---- v4: pastas nascem fechadas por padrão -----------------------------
+  // `folders.create()` já grava `expanded = 0` desde a v1.3.1, mas isso só
+  // vale para pastas criadas DEPOIS da mudança — quem tinha pastas antigas
+  // (todas com `expanded = 1`, o default original da coluna) continuava
+  // vendo tudo aberto. É uma migração de dados, não de esquema: some as
+  // pastas já existentes ao comportamento novo, de uma vez.
+  (d) => {
+    d.exec(`UPDATE folders SET expanded = 0`);
   }
 ];
 
@@ -216,4 +226,4 @@ function migrate(d) {
   }
 }
 
-module.exports = { open, get, close, getPath, backupTo, engine };
+module.exports = { open, get, close, getPath, backupTo, engine, migrate, MIGRATIONS };
