@@ -840,7 +840,7 @@ checkAsync('aviso de nova versão', 'versão igual à instalada não vira aviso'
   assert(r.latest === 'v1.0.0', r.latest);
 });
 
-checkAsync('aviso de nova versão', 'segunda consulta em menos de 24h vem do cache, sem rede', async () => {
+checkAsync('aviso de nova versão', 'segunda consulta em menos de uma semana vem do cache, sem rede', async () => {
   repo.settings.set('update.lastCheckAt', 0);
   let chamadas = 0;
 
@@ -861,7 +861,7 @@ checkAsync('aviso de nova versão', 'segunda consulta em menos de 24h vem do cac
   assert(segunda.checkedAt === primeira.checkedAt, 'o cache deveria manter o carimbo da consulta real');
 });
 
-checkAsync('aviso de nova versão', 'falha de rede devolve error e não queima as 24h', async () => {
+checkAsync('aviso de nova versão', 'falha de rede devolve error e não queima a semana de cache', async () => {
   repo.settings.set('update.lastCheckAt', 0);
   const r = await comFetchFalso(
     async () => { throw new Error('getaddrinfo ENOTFOUND api.github.com'); },

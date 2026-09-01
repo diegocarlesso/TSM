@@ -141,7 +141,7 @@ export async function settingsDialog(initialTab = 'aparência') {
       full(checkbox('Reconectar automaticamente quando a conexão cair',
         draft['connection.reconnectOnDrop'], (v) => commit('connection.reconnectOnDrop', v)));
       grid.append(el('div', { class: 'full' }, [el('hr', { style: 'border-color:var(--border)' })]));
-      full(checkbox('Verificar atualizações automaticamente (uma vez por dia)',
+      full(checkbox('Verificar atualizações automaticamente (uma vez por semana)',
         draft['update.checkEnabled'] !== false, (v) => commit('update.checkEnabled', v)));
       full(el('button', { text: 'Verificar agora', onClick: () => checkForUpdateNow() }));
       grid.append(el('div', { class: 'hint full' }, [
@@ -265,12 +265,18 @@ export async function checkForUpdateNow() {
       toast('Não deu para verificar agora — sem conexão?', 'err');
       return r;
     }
-    toast(
-      r.hasUpdate
-        ? `Nova versão ${updateVersionLabel(r.latest)} disponível`
-        : 'Você já está na última versão',
-      'ok'
-    );
+    if (r.hasUpdate) {
+      const abrir = await confirmDialog({
+        title: 'Nova versão disponível',
+        message: `${updateVersionLabel(r.latest)} já está disponível `
+          + `(você está na ${updateVersionLabel(r.current)}).`,
+        detail: 'Deseja abrir a página de download no navegador?',
+        confirmLabel: 'Abrir página'
+      });
+      if (abrir) window.tsm.app.openExternal(r.url);
+    } else {
+      toast('Você já está na última versão', 'ok');
+    }
     return r;
   });
 }

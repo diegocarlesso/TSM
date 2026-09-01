@@ -101,7 +101,11 @@ reutiliza, modifica nem contorna nada do produto da Mobatek.
 - Histórico de conexões e gerenciamento de chaves de host conhecidas.
 - **Aviso de nova versão** disponível no GitHub Releases — checagem roda inteiramente no
   processo principal (a interface continua sem fazer nenhuma chamada de rede própria),
-  uma vez por dia, com opção de desligar em Configurações.
+  uma vez por semana, com opção de desligar em Configurações. Quando encontra versão
+  nova, pergunta se quer abrir a página de download (só na primeira vez que aquela
+  versão aparece — depois fica só o badge discreto no rodapé). Checagem manual a
+  qualquer hora por Configurações → "Verificar agora" ou Ajuda → "Verificar
+  atualizações..." também pergunta na hora, se houver.
 
 ### Segurança
 - Credenciais cifradas pelo **cofre do sistema** (DPAPI no Windows, Keychain no macOS,

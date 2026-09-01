@@ -14,7 +14,7 @@
 const repo = require('./store/repo');
 
 const RELEASES_URL = 'https://api.github.com/repos/diegocarlesso/TSM/releases/latest';
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * Compara duas versões "major.minor.patch". Função pura, sem I/O, para poder
@@ -57,10 +57,10 @@ function currentVersion() {
  * Consulta o GitHub Releases e devolve o que o renderer precisa para avisar.
  *
  * - desligado nas preferências e sem `force` -> `{ skipped: true }`;
- * - consultado há menos de 24h e sem `force` -> devolve o resultado em cache;
+ * - consultado há menos de uma semana e sem `force` -> devolve o resultado em cache;
  * - falha de rede -> `{ error: true }` e NÃO marca `lastCheckAt`, para tentar de
- *   novo na próxima oportunidade em vez de esperar um dia por causa de uma queda
- *   momentânea.
+ *   novo na próxima oportunidade em vez de esperar uma semana por causa de uma
+ *   queda momentânea.
  */
 async function checkForUpdate({ force = false } = {}) {
   if (!repo.settings.get('update.checkEnabled', true) && !force) {
@@ -69,7 +69,7 @@ async function checkForUpdate({ force = false } = {}) {
 
   if (!force) {
     const lastCheckAt = Number(repo.settings.get('update.lastCheckAt', 0)) || 0;
-    if (Date.now() - lastCheckAt < ONE_DAY_MS) {
+    if (Date.now() - lastCheckAt < ONE_WEEK_MS) {
       const cached = repo.settings.get('update.lastResult', null);
       if (cached && cached.latest) {
         const current = currentVersion();

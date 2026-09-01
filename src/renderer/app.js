@@ -39,8 +39,8 @@ async function boot() {
   bindShortcuts();
   bindMenu();
 
-  // O main avisa sozinho, uma vez por dia, quando existe versão mais nova.
-  window.tsm.update.onAvailable((result) => showUpdateBadge(result));
+  // O main avisa sozinho, uma vez por semana, quando existe versão mais nova.
+  window.tsm.update.onAvailable((result) => notifyUpdateAvailable(result));
 
   initTree({
     onOpenSession: openSession,
@@ -764,6 +764,37 @@ function bindMenu() {
  * nova. Clicar abre a página do release no navegador (o main é que abre; o
  * renderer nunca navega para fora).
  */
+/**
+ * Pergunta se quer abrir a página do release. Usada tanto pelo aviso
+ * automático quanto pelas checagens manuais (menu Ajuda e Configurações) —
+ * um lugar só, pra não desalinhar o texto entre os três caminhos.
+ */
+async function promptOpenUpdatePage(result) {
+  const abrir = await confirmDialog({
+    title: 'Nova versão disponível',
+    message: `${updateVersionLabel(result.latest)} já está disponível `
+      + `(você está na ${updateVersionLabel(result.current)}).`,
+    detail: 'Deseja abrir a página de download no navegador?',
+    confirmLabel: 'Abrir página'
+  });
+  if (abrir) window.tsm.app.openExternal(result.url);
+}
+
+/**
+ * Aviso automático (uma vez por semana, no boot). Mostra o badge sempre —
+ * fica como lembrete discreto — mas só pergunta com um diálogo na PRIMEIRA
+ * vez que aquela versão aparece, pra não interromper toda abertura do app
+ * enquanto o usuário não atualiza.
+ */
+async function notifyUpdateAvailable(result) {
+  showUpdateBadge(result);
+  if (!result.latest) return;
+  const jaAvisada = setting('update.lastNotifiedVersion', null);
+  if (result.latest === jaAvisada) return;
+  await window.tsm.settings.set('update.lastNotifiedVersion', result.latest);
+  await promptOpenUpdatePage(result);
+}
+
 function showUpdateBadge(result) {
   if (!result || !result.latest) return;
   const foot = $('.sidebar-foot');
