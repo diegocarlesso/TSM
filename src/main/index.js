@@ -9,6 +9,15 @@ const menu = require('./menu');
 const manager = require('./transports/manager');
 const { BUILTIN_THEMES, DEFAULT_SETTINGS } = require('../shared/themes');
 
+// `app.getName()` (usado pelo Electron para o WM_CLASS no Linux e como
+// fallback de pasta de dados) lê o campo `name` do package.json por padrão —
+// "total-session-manager", sem espaço/maiúsculas. O .desktop que o
+// electron-builder gera declara `StartupWMClass=Total Session Manager`
+// (o `productName`), então sem isto o ambiente gráfico nunca casava a janela
+// em execução com a entrada .desktop e caía no ícone genérico na barra de
+// tarefas — mesmo com o ícone certo empacotado.
+app.setName('Total Session Manager');
+
 // Uma instancia só: a segunda foca a janela existente em vez de abrir outra.
 if (!app.requestSingleInstanceLock()) {
   app.quit();
