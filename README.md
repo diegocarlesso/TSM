@@ -25,6 +25,12 @@ reutiliza, modifica nem contorna nada do produto da Mobatek.
 
 > **macOS:** binários sem assinatura (o projeto não tem certificado Apple). Na primeira abertura: botão direito no app → **Abrir** → **Abrir**. Se mesmo assim aparecer "está danificado e não pode ser aberto", rode `xattr -cr "/Applications/Total Session Manager.app"` no Terminal (ajuste o caminho se tiver movido para outro lugar) — remove a flag de quarentena que o navegador grava no download, sem precisar desativar o Gatekeeper.
 > **Windows:** o `.exe` portátil é um autoextraível — ele descompacta para uma pasta temporária a cada execução, o que o torna mais lento para abrir e mais sujeito a alertas do SmartScreen/Defender do que um binário assinado. Veja [Empacotamento (portátil)](#empacotamento-portátil) para a alternativa em pasta, mais rápida.
+> **Linux:** o Electron não empacota TUDO — algumas bibliotecas do sistema precisam já estar instaladas (isso vale pra praticamente qualquer app Electron/Chromium, não é peculiaridade do TSM). Numa instalação mínima (Arch numa VM, por exemplo) o app pode simplesmente **não abrir nenhuma janela, sem erro visível nenhum**, por duas causas distintas — vale conferir as duas:
+>
+> 1. **FUSE ausente:** o `.AppImage` precisa de FUSE pra se montar. Sem ele, o processo só imprime um aviso no terminal e sai — invisível se você deu duplo clique num gerenciador de arquivos. Instale o FUSE (`sudo pacman -S fuse2` no Arch; `sudo apt install libfuse2t64` no Ubuntu 24.04+/`libfuse2` em versões antigas) **ou** use o `.tar.gz` em vez do AppImage, que não depende de FUSE.
+> 2. **NSS/NSPR/ALSA ausentes:** o binário do Electron (dentro do AppImage OU do `.tar.gz` — os dois têm a mesma dependência) precisa de `libnss3`, `libnspr4` e `libasound.so.2` do sistema. Instale com `sudo pacman -S nss nspr alsa-lib` no Arch, ou `sudo apt install libnss3 libnspr4 libasound2` (ou `libasound2t64` em Ubuntu recente) no Debian/Ubuntu.
+>
+> Rodar `./TSM.AppImage` (ou o binário do `.tar.gz`) direto num terminal, em vez de duplo clique, mostra a mensagem de erro específica em qualquer um dos dois casos.
 
 ---
 
@@ -190,8 +196,8 @@ O que sai em `dist/`:
 | Windows | `win-unpacked/` | Pasta pronta com `Total Session Manager.exe` e os arquivos de apoio. Copie a pasta inteira e execute. |
 | Windows | `TSM-1.6.2-win-x64.zip` | **Recomendado.** Mesma pasta do `win-unpacked`, zipada. Extraia uma vez e o app abre na hora dali em diante. |
 | Windows | `TSM-1.6.2-win-portable-x64.exe` | Executável único (~86 MB), no estilo do MobaXterm Portable. Mais conveniente para levar num pendrive, mas mais lento: é um autoextraível NSIS que descompacta tudo para uma pasta temporária **toda vez que abre** — isso soma alguns segundos de espera e é parte do motivo dele chamar mais atenção do SmartScreen/Defender. |
-| Linux | `TSM-1.6.2-linux-x86_64.AppImage` | Um arquivo só: `chmod +x` e execute. |
-| Linux | `linux-unpacked/`, `.tar.gz` | Pasta com o binário e as bibliotecas. |
+| Linux | `TSM-1.6.2-linux-x86_64.AppImage` | Um arquivo só: `chmod +x` e execute. Exige FUSE e as bibliotecas do sistema descritas em [Download](#download). |
+| Linux | `linux-unpacked/`, `.tar.gz` | Pasta com o binário e as bibliotecas. Mesmas dependências de sistema do AppImage, menos o FUSE. |
 | macOS | `mac/Total Session Manager.app` | Arraste para onde quiser e abra. |
 | macOS | `.dmg` / `.zip` | Envelope para distribuir o `.app`. |
 
