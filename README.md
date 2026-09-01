@@ -12,16 +12,16 @@ reutiliza, modifica nem contorna nada do produto da Mobatek.
 
 ## Download
 
-Última versão: [**v1.6.3**](https://github.com/diegocarlesso/TSM/releases/tag/v1.6.3) — nenhum instalador, é só baixar e rodar.
+Última versão: [**v1.6.4**](https://github.com/diegocarlesso/TSM/releases/tag/v1.6.4) — nenhum instalador, é só baixar e rodar.
 
 | Sistema | Arquivo | Como usar |
 |---|---|---|
-| Windows | [TSM-1.6.3-win-x64.zip](https://github.com/diegocarlesso/TSM/releases/download/v1.6.3/TSM-1.6.3-win-x64.zip) | **Recomendado.** Extraia uma vez, abre na hora dali em diante. |
-| Windows | [TSM-1.6.3-win-portable-x64.exe](https://github.com/diegocarlesso/TSM/releases/download/v1.6.3/TSM-1.6.3-win-portable-x64.exe) | Executável único, mais lento para abrir (autoextrai a cada execução). |
-| Linux | [TSM-1.6.3-linux-x86_64.AppImage](https://github.com/diegocarlesso/TSM/releases/download/v1.6.3/TSM-1.6.3-linux-x86_64.AppImage) | `chmod +x` e execute. |
-| Linux | [TSM-1.6.3-linux-x64.tar.gz](https://github.com/diegocarlesso/TSM/releases/download/v1.6.3/TSM-1.6.3-linux-x64.tar.gz) | Pasta com o binário, se preferir extrair. |
-| macOS (Apple Silicon) | [TSM-1.6.3-mac-arm64.dmg](https://github.com/diegocarlesso/TSM/releases/download/v1.6.3/TSM-1.6.3-mac-arm64.dmg) | M1/M2/M3/M4. |
-| macOS (Intel) | [TSM-1.6.3-mac-x64.dmg](https://github.com/diegocarlesso/TSM/releases/download/v1.6.3/TSM-1.6.3-mac-x64.dmg) | Macs Intel. |
+| Windows | [TSM-1.6.4-win-x64.zip](https://github.com/diegocarlesso/TSM/releases/download/v1.6.4/TSM-1.6.4-win-x64.zip) | **Recomendado.** Extraia uma vez, abre na hora dali em diante. |
+| Windows | [TSM-1.6.4-win-portable-x64.exe](https://github.com/diegocarlesso/TSM/releases/download/v1.6.4/TSM-1.6.4-win-portable-x64.exe) | Executável único, mais lento para abrir (autoextrai a cada execução). |
+| Linux | [TSM-1.6.4-linux-x86_64.AppImage](https://github.com/diegocarlesso/TSM/releases/download/v1.6.4/TSM-1.6.4-linux-x86_64.AppImage) | `chmod +x` e execute. |
+| Linux | [TSM-1.6.4-linux-x64.tar.gz](https://github.com/diegocarlesso/TSM/releases/download/v1.6.4/TSM-1.6.4-linux-x64.tar.gz) | Pasta com o binário, se preferir extrair. |
+| macOS (Apple Silicon) | [TSM-1.6.4-mac-arm64.dmg](https://github.com/diegocarlesso/TSM/releases/download/v1.6.4/TSM-1.6.4-mac-arm64.dmg) | M1/M2/M3/M4. |
+| macOS (Intel) | [TSM-1.6.4-mac-x64.dmg](https://github.com/diegocarlesso/TSM/releases/download/v1.6.4/TSM-1.6.4-mac-x64.dmg) | Macs Intel. |
 
 > **macOS:** binários sem assinatura (o projeto não tem certificado Apple). Na primeira abertura: botão direito no app → **Abrir** → **Abrir**. Se mesmo assim aparecer "está danificado e não pode ser aberto", rode `xattr -cr "/Applications/Total Session Manager.app"` no Terminal (ajuste o caminho se tiver movido para outro lugar) — remove a flag de quarentena que o navegador grava no download, sem precisar desativar o Gatekeeper.
 > **Windows:** o `.exe` portátil é um autoextraível — ele descompacta para uma pasta temporária a cada execução, o que o torna mais lento para abrir e mais sujeito a alertas do SmartScreen/Defender do que um binário assinado. Veja [Empacotamento (portátil)](#empacotamento-portátil) para a alternativa em pasta, mais rápida.
@@ -198,9 +198,9 @@ O que sai em `dist/`:
 | Plataforma | Artefato | Como usar |
 |---|---|---|
 | Windows | `win-unpacked/` | Pasta pronta com `Total Session Manager.exe` e os arquivos de apoio. Copie a pasta inteira e execute. |
-| Windows | `TSM-1.6.3-win-x64.zip` | **Recomendado.** Mesma pasta do `win-unpacked`, zipada. Extraia uma vez e o app abre na hora dali em diante. |
-| Windows | `TSM-1.6.3-win-portable-x64.exe` | Executável único (~86 MB), no estilo do MobaXterm Portable. Mais conveniente para levar num pendrive, mas mais lento: é um autoextraível NSIS que descompacta tudo para uma pasta temporária **toda vez que abre** — isso soma alguns segundos de espera e é parte do motivo dele chamar mais atenção do SmartScreen/Defender. |
-| Linux | `TSM-1.6.3-linux-x86_64.AppImage` | Um arquivo só: `chmod +x` e execute. Exige FUSE e as bibliotecas do sistema descritas em [Download](#download). |
+| Windows | `TSM-1.6.4-win-x64.zip` | **Recomendado.** Mesma pasta do `win-unpacked`, zipada. Extraia uma vez e o app abre na hora dali em diante. |
+| Windows | `TSM-1.6.4-win-portable-x64.exe` | Executável único (~86 MB), no estilo do MobaXterm Portable. Mais conveniente para levar num pendrive, mas mais lento: é um autoextraível NSIS que descompacta tudo para uma pasta temporária **toda vez que abre** — isso soma alguns segundos de espera e é parte do motivo dele chamar mais atenção do SmartScreen/Defender. |
+| Linux | `TSM-1.6.4-linux-x86_64.AppImage` | Um arquivo só: `chmod +x` e execute. Exige FUSE e as bibliotecas do sistema descritas em [Download](#download). |
 | Linux | `linux-unpacked/`, `.tar.gz` | Pasta com o binário e as bibliotecas. Mesmas dependências de sistema do AppImage, menos o FUSE. |
 | macOS | `mac/Total Session Manager.app` | Arraste para onde quiser e abra. |
 | macOS | `.dmg` / `.zip` | Envelope para distribuir o `.app`. |
