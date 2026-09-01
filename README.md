@@ -23,7 +23,7 @@ reutiliza, modifica nem contorna nada do produto da Mobatek.
 | macOS (Apple Silicon) | [TSM-1.6.1-mac-arm64.dmg](https://github.com/diegocarlesso/TSM/releases/download/v1.6.1/TSM-1.6.1-mac-arm64.dmg) | M1/M2/M3/M4. |
 | macOS (Intel) | [TSM-1.6.1-mac-x64.dmg](https://github.com/diegocarlesso/TSM/releases/download/v1.6.1/TSM-1.6.1-mac-x64.dmg) | Macs Intel. |
 
-> **macOS:** binários sem assinatura (o projeto não tem certificado Apple). Na primeira abertura: botão direito no app → **Abrir** → **Abrir**.
+> **macOS:** binários sem assinatura (o projeto não tem certificado Apple). Na primeira abertura: botão direito no app → **Abrir** → **Abrir**. Se mesmo assim aparecer "está danificado e não pode ser aberto", rode `xattr -cr "/Applications/Total Session Manager.app"` no Terminal (ajuste o caminho se tiver movido para outro lugar) — remove a flag de quarentena que o navegador grava no download, sem precisar desativar o Gatekeeper.
 > **Windows:** o `.exe` portátil é um autoextraível — ele descompacta para uma pasta temporária a cada execução, o que o torna mais lento para abrir e mais sujeito a alertas do SmartScreen/Defender do que um binário assinado. Veja [Empacotamento (portátil)](#empacotamento-portátil) para a alternativa em pasta, mais rápida.
 
 ---
@@ -178,7 +178,10 @@ npm run dist:mac
 > artefatos. Empurrar uma tag `vX.Y.Z` faz o mesmo e ainda anexa tudo ao release.
 >
 > Os binários de macOS saem **sem assinatura** (não há certificado de desenvolvedor no
-> projeto): na primeira abertura, use botão direito → Abrir.
+> projeto): na primeira abertura, use botão direito → Abrir. Por isso o build também
+> **não** liga `hardenedRuntime` — ad-hoc + hardened runtime sem certificado de verdade é
+> a combinação que o Gatekeeper do Apple Silicon rejeita como "está danificado" em vez do
+> aviso mais brando e contornável de "desenvolvedor não identificado".
 
 O que sai em `dist/`:
 

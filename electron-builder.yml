@@ -76,9 +76,14 @@ mac:
     - target: dmg
       arch: [x64, arm64]
   category: public.app-category.developer-tools
-  hardenedRuntime: true
-  entitlements: build/entitlements.mac.plist
-  entitlementsInherit: build/entitlements.mac.plist
+  # SEM hardenedRuntime/entitlements de propósito: essas duas coisas só fazem
+  # sentido junto de um certificado Developer ID de verdade. Sem certificado
+  # (CSC_IDENTITY_AUTO_DISCOVERY: false no CI), o electron-builder assina só
+  # ad-hoc — e ad-hoc + hardened runtime é exatamente a combinação que o
+  # Gatekeeper do Apple Silicon rejeita como "está danificado", em vez do
+  # aviso mais brando de "desenvolvedor não identificado" (contornável com
+  # botão direito → Abrir). Se um certificado for comprado no futuro, é aí
+  # que hardenedRuntime + build/entitlements.mac.plist voltam a fazer sentido.
   artifactName: TSM-${version}-mac-${arch}.${ext}
 
 dmg:
